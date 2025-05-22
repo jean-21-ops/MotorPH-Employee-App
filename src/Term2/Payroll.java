@@ -17,6 +17,10 @@ public class Payroll {
         return netSalary;
     }
 
+    public int getEmployeeID() {
+        return employeeID;
+    }
+
     public void setPayrollID(int payrollID) {
         this.payrollID = payrollID;
     }

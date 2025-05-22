@@ -4,5 +4,6 @@
 /**
  * 
  */
-module Term2 {
+module Term {
+    requires java.desktop;
 }

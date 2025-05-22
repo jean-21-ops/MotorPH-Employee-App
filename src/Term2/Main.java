@@ -1,12 +1,13 @@
 package Term2;
 
+import javax.swing.SwingUtilities;
+
 public class Main {
+    @SuppressWarnings("resource")
     public static void main(String[] args) {
-        Employee employee = new Employee();
-        Payroll payroll = new Payroll();
-        LeaveRequest leaveRequest = new LeaveRequest();
-        TaxForm taxForm = new TaxForm();
-        Login login = new Login();
-        HRAdmin hrAdmin = new HRAdmin();
+        SwingUtilities.invokeLater(() -> {
+            MotorPHApp app = new MotorPHApp();
+            app.setVisible(true);
+        });
     }
 }

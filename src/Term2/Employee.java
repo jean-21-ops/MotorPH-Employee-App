@@ -23,6 +23,10 @@ public class Employee {
         return department;
     }
 
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
     public void setName(String name) {
         this.name = name;
     }
