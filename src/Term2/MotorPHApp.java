@@ -29,6 +29,7 @@ public class MotorPHApp extends JFrame {
     private JPanel attendancePanel;
     private JPanel employeeManagementPanel;
     private JPanel employeeListPanel;
+    private JButton themeToggleButton;
     private ArrayList<Employee> employeeList; // To store employees
         
     public MotorPHApp() {
@@ -118,7 +119,7 @@ public class MotorPHApp extends JFrame {
         // Create menu panel (sidebar) with blue background
         JPanel menuPanel = new JPanel();
         menuPanel.setLayout(new BoxLayout(menuPanel, BoxLayout.Y_AXIS));
-        menuPanel.setBackground(new Color(0, 102, 204));
+        menuPanel.setBackground(ThemeManager.getAccentColor());
         menuPanel.setBorder(BorderFactory.createEmptyBorder(20, 10, 20, 10));
         menuPanel.setPreferredSize(new Dimension(220, 600));
         
@@ -129,6 +130,18 @@ public class MotorPHApp extends JFrame {
         logoLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         logoLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
         menuPanel.add(logoLabel);
+        
+        // Add theme toggle button at the top
+        themeToggleButton = new JButton(ThemeManager.isDarkMode() ? "☀️ Light Mode" : "🌙 Dark Mode");
+        styleMenuButton(themeToggleButton);
+        themeToggleButton.setBackground(new Color(255, 255, 255, 30)); // Semi-transparent
+        themeToggleButton.addActionListener(e -> {
+            ThemeManager.toggleTheme(this);
+            updateThemeToggleButton();
+            updateAllButtonStyles();
+        });
+        menuPanel.add(themeToggleButton);
+        menuPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         
         // Create menu buttons
         JButton employeeManagementButton = new JButton("Employee Management");
@@ -164,7 +177,7 @@ public class MotorPHApp extends JFrame {
         menuPanel.add(Box.createVerticalGlue());
         menuPanel.add(logoutButton);
         
-        // Add button actions
+        // Add button actions (existing code)
         employeeManagementButton.addActionListener(e -> cardLayout.show(mainPanel, "employeeManagement"));
         employeeInfoButton.addActionListener(e -> cardLayout.show(mainPanel, "employeeInfo"));
         payrollButton.addActionListener(e -> cardLayout.show(mainPanel, "payroll"));
@@ -189,8 +202,33 @@ public class MotorPHApp extends JFrame {
         // Initially hide the sidebar until login
         menuPanel.setVisible(false);
         
-        // After successful login, we'll make the sidebar visible
         return menuPanel;
+    }
+
+    private void updateThemeToggleButton() {
+        if (themeToggleButton != null) {
+            themeToggleButton.setText(ThemeManager.isDarkMode() ? "☀️ Light Mode" : "🌙 Dark Mode");
+        }
+    }
+
+    // Add this method to update all button styles when theme changes
+    private void updateAllButtonStyles() {
+        // Update all buttons in the application
+        updateButtonStylesRecursively(this);
+    }
+
+    private void updateButtonStylesRecursively(Container container) {
+        for (Component component : container.getComponents()) {
+            if (component instanceof JButton) {
+                JButton button = (JButton) component;
+                if (!button.equals(themeToggleButton)) { // Don't update the theme toggle button
+                    forceButtonStyle(button);
+                }
+            }
+            if (component instanceof Container) {
+                updateButtonStylesRecursively((Container) component);
+            }
+        }
     }
 
     private void createEmployeeManagementPanel() {
@@ -696,8 +734,10 @@ public class MotorPHApp extends JFrame {
 
     // Helper method to style text fields
     private void styleTextField(JTextField field) {
+        field.setBackground(ThemeManager.getBackgroundColor());
+        field.setForeground(ThemeManager.getForegroundColor());
         field.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(0, 102, 204)),
+            BorderFactory.createLineBorder(ThemeManager.getAccentColor()),
             BorderFactory.createEmptyBorder(5, 5, 5, 5)));
     }
 
@@ -936,9 +976,11 @@ public class MotorPHApp extends JFrame {
                     }
                 }
                 
+                // Apply current theme to all components
+                ThemeManager.applyTheme(this);
+                
                 // Refresh the employee table with the latest data
                 if (employeeManagementPanel != null) {
-                    // Find the table model and refresh it
                     refreshEmployeeTableAfterLogin();
                 }
                 
@@ -1867,16 +1909,16 @@ public class MotorPHApp extends JFrame {
     }
 
     private void styleButton(JButton button) {
-        button.setBackground(new Color(0, 102, 204));
-        button.setForeground(Color.WHITE);
-        button.setOpaque(true);  // This is crucial - makes sure background is painted
+        button.setBackground(ThemeManager.getButtonBackgroundColor());
+        button.setForeground(ThemeManager.getButtonForegroundColor());
+        button.setOpaque(true);
         button.setBorderPainted(false);
         button.setFocusPainted(false);
-        button.setContentAreaFilled(true);  // Ensure content area is filled with background color
+        button.setContentAreaFilled(true);
         
         // More visible border
         button.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(0, 80, 170), 2),
+            BorderFactory.createLineBorder(ThemeManager.getAccentColor(), 2),
             BorderFactory.createEmptyBorder(8, 15, 8, 15)));
         button.setFont(new Font("Arial", Font.BOLD, 12));
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -1885,11 +1927,13 @@ public class MotorPHApp extends JFrame {
         button.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseEntered(java.awt.event.MouseEvent evt) {
-                button.setBackground(new Color(0, 120, 230));
+                Color hoverColor = ThemeManager.isDarkMode() ? 
+                    new Color(0, 140, 255) : new Color(0, 120, 230);
+                button.setBackground(hoverColor);
             }
             @Override
             public void mouseExited(java.awt.event.MouseEvent evt) {
-                button.setBackground(new Color(0, 102, 204));
+                button.setBackground(ThemeManager.getButtonBackgroundColor());
             }
         });
     }
@@ -1913,7 +1957,7 @@ public class MotorPHApp extends JFrame {
     }
 
     private void styleHeaderPanel(JPanel panel) {
-        panel.setBackground(new Color(0, 102, 204));
+        panel.setBackground(ThemeManager.getAccentColor());
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
     }
 }
