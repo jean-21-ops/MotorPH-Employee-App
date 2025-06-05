@@ -47,6 +47,9 @@ public class MotorPHApp extends JFrame {
         taxForm = new TaxForm();
         login = new Login();
         attendanceRecords = new ArrayList<>();
+
+        // Initialize employeeList BEFORE creating panels
+        employeeList = new ArrayList<>(); // Initialize as empty list first
         
         createSampleAttendanceData();
         
@@ -82,6 +85,18 @@ public class MotorPHApp extends JFrame {
         createAttendancePanel();
         createEmployeeManagementPanel();
         createEmployeeListPanel();
+
+        // Initialize CSV file and load employees AFTER creating panels
+        try {
+            CSVManager.initializeCSVFile();
+            employeeList = CSVManager.loadEmployeesFromCSV();
+            if (employeeList == null) {
+                employeeList = new ArrayList<>(); // Fallback if CSV loading fails
+            }
+        } catch (Exception e) {
+            System.err.println("Error loading employees: " + e.getMessage());
+            employeeList = new ArrayList<>(); // Fallback to empty list
+        }
         
         mainPanel.add(loginPanel, "login");
         mainPanel.add(dashboardPanel, "dashboard");
@@ -189,185 +204,501 @@ public class MotorPHApp extends JFrame {
         JLabel titleLabel = new JLabel("EMPLOYEE MANAGEMENT", JLabel.CENTER);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
         titleLabel.setForeground(Color.WHITE);
-        
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        searchPanel.setBackground(new Color(0, 102, 204));
-        JTextField searchField = new JTextField(15);
-        JButton searchButton = new JButton("Search");
-        forceButtonStyle(searchButton);
-        searchPanel.add(new JLabel("Search: "));
-        searchPanel.getComponent(0).setForeground(Color.WHITE);
-        searchPanel.add(searchField);
-        searchPanel.add(searchButton);
-        
         headerPanel.add(titleLabel, BorderLayout.CENTER);
-        headerPanel.add(searchPanel, BorderLayout.EAST);
         
-        // Form Panel with white background
-        JPanel formPanel = new JPanel(new GridBagLayout());
-        stylePanel(formPanel);
-        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        // Main content with employee table
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.setBackground(Color.WHITE);
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         
-        // Subtitle
-        JLabel subtitleLabel = new JLabel("Add New Employee");
-        subtitleLabel.setFont(new Font("Arial", Font.BOLD, 18));
-        subtitleLabel.setForeground(new Color(0, 102, 204));
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2;
-        formPanel.add(subtitleLabel, gbc);
+        // Employee table
+        String[] columnNames = {"Employee #", "Last Name", "First Name", "SSS Number", "PhilHealth #", "TIN", "Pag-IBIG #"};
+        DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // Make table read-only
+            }
+        };
         
-        // Employee Number field with styled border
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.gridwidth = 1;
-        JLabel empNumberLabel = new JLabel("Employee Number:");
-        formPanel.add(empNumberLabel, gbc);
+        JTable employeeTable = new JTable(tableModel);
+        employeeTable.getTableHeader().setBackground(new Color(0, 102, 204));
+        employeeTable.getTableHeader().setForeground(Color.WHITE);
+        employeeTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
+        employeeTable.setRowHeight(25);
+        employeeTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        employeeTable.setGridColor(new Color(220, 220, 220));
         
-        gbc.gridx = 1;
-        JTextField empNumberField = new JTextField(15);
-        empNumberField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(0, 102, 204)),
-            BorderFactory.createEmptyBorder(5, 5, 5, 5)));
-        formPanel.add(empNumberField, gbc);
+        // Load employee data into table
+        refreshEmployeeTable(tableModel);
         
-        // Name field with styled border
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        formPanel.add(new JLabel("Name:"), gbc);
+        JScrollPane scrollPane = new JScrollPane(employeeTable);
+        scrollPane.setBorder(BorderFactory.createTitledBorder("All Employees"));
+        scrollPane.setPreferredSize(new Dimension(700, 300));
         
-        gbc.gridx = 1;
-        JTextField nameField = new JTextField(15);
-        nameField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(0, 102, 204)),
-            BorderFactory.createEmptyBorder(5, 5, 5, 5)));
-        formPanel.add(nameField, gbc);
+        contentPanel.add(scrollPane, BorderLayout.CENTER);
         
-        // Birthday field with styled border
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        formPanel.add(new JLabel("Birthday (MM/DD/YYYY):"), gbc);
-        
-        gbc.gridx = 1;
-        JTextField birthdayField = new JTextField(15);
-        birthdayField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(0, 102, 204)),
-            BorderFactory.createEmptyBorder(5, 5, 5, 5)));
-        formPanel.add(birthdayField, gbc);
-        
-        // Contact Information field with styled border
-        gbc.gridx = 0;
-        gbc.gridy = 4;
-        formPanel.add(new JLabel("Contact Information:"), gbc);
-        
-        gbc.gridx = 1;
-        JTextField contactField = new JTextField(15);
-        contactField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(0, 102, 204)),
-            BorderFactory.createEmptyBorder(5, 5, 5, 5)));
-        formPanel.add(contactField, gbc);
-        
-        // Position field with styled border
-        gbc.gridx = 0;
-        gbc.gridy = 5;
-        formPanel.add(new JLabel("Position:"), gbc);
-        
-        gbc.gridx = 1;
-        JTextField positionField = new JTextField(15);
-        positionField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(0, 102, 204)),
-            BorderFactory.createEmptyBorder(5, 5, 5, 5)));
-        formPanel.add(positionField, gbc);
-        
-        // Department dropdown
-        gbc.gridx = 0;
-        gbc.gridy = 6;
-        formPanel.add(new JLabel("Department:"), gbc);
-        
-        gbc.gridx = 1;
-        String[] departments = {"IT", "HR", "Finance", "Operations", "Marketing", "Sales"};
-        JComboBox<String> departmentCombo = new JComboBox<>(departments);
-        departmentCombo.setBorder(BorderFactory.createLineBorder(new Color(0, 102, 204)));
-        formPanel.add(departmentCombo, gbc);
-        
-        // Button Panel
+        // Button panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         buttonPanel.setBackground(Color.WHITE);
         
-        JButton addButton = new JButton("ADD EMPLOYEE");
-        forceButtonStyle(addButton);
-        addButton.setFont(new Font("Arial", Font.BOLD, 14));
+        JButton viewEmployeeButton = new JButton("View Employee");
+        JButton newEmployeeButton = new JButton("New Employee");
+        JButton refreshButton = new JButton("Refresh");
         
-        JButton listButton = new JButton("Employee List →");
-        forceButtonStyle(listButton);
+        forceButtonStyle(viewEmployeeButton);
+        forceButtonStyle(newEmployeeButton);
+        forceButtonStyle(refreshButton);
         
-        buttonPanel.add(addButton);
-        buttonPanel.add(listButton);
-        
-        // Add button actions (keeping the existing logic)
-        addButton.addActionListener(e -> {
-            try {
-                int empNumber = Integer.parseInt(empNumberField.getText());
-                String name = nameField.getText();
-                String birthday = birthdayField.getText();
-                String contact = contactField.getText();
-                String position = positionField.getText();
-                String department = (String) departmentCombo.getSelectedItem();
-                
-                // Validate inputs
-                if (name.isEmpty() || birthday.isEmpty() || contact.isEmpty() || position.isEmpty()) {
-                    JOptionPane.showMessageDialog(employeeManagementPanel,
-                        "Please fill all fields",
-                        "Input Error",
-                        JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-                
-                // Create and add employee
-                Employee newEmployee = new Employee();
-                newEmployee.setEmployeeID(empNumber);
-                newEmployee.setName(name);
-                newEmployee.setPhoneNumber(contact);
-                newEmployee.setDepartment(department);
-                
-                if (employeeList == null) {
-                    employeeList = new ArrayList<>();
-                }
-                employeeList.add(newEmployee);
-                
-                // Clear fields
-                empNumberField.setText("");
-                nameField.setText("");
-                birthdayField.setText("");
-                contactField.setText("");
-                positionField.setText("");
-                
+        viewEmployeeButton.addActionListener(e -> {
+            int selectedRow = employeeTable.getSelectedRow();
+            if (selectedRow >= 0) {
+                Employee selectedEmployee = employeeList.get(selectedRow);
+                openEmployeeDetailFrame(selectedEmployee);
+            } else {
                 JOptionPane.showMessageDialog(employeeManagementPanel,
-                    "Employee added successfully!",
-                    "Success",
-                    JOptionPane.INFORMATION_MESSAGE);
+                    "Please select an employee from the table",
+                    "No Selection",
+                    JOptionPane.WARNING_MESSAGE);
+            }
+        });
+        
+        newEmployeeButton.addActionListener(e -> openNewEmployeeFrame());
+        
+        refreshButton.addActionListener(e -> {
+            employeeList = CSVManager.loadEmployeesFromCSV();
+            refreshEmployeeTable(tableModel);
+        });
+        
+        buttonPanel.add(viewEmployeeButton);
+        buttonPanel.add(newEmployeeButton);
+        buttonPanel.add(refreshButton);
+        
+        // Search panel
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        searchPanel.setBackground(Color.WHITE);
+        searchPanel.setBorder(BorderFactory.createTitledBorder("Search"));
+        
+        JTextField searchField = new JTextField(20);
+        JButton searchButton = new JButton("Search");
+        forceButtonStyle(searchButton);
+        
+        searchButton.addActionListener(e -> {
+            String searchTerm = searchField.getText().toLowerCase().trim();
+            filterEmployeeTable(tableModel, searchTerm);
+        });
+        
+        searchPanel.add(new JLabel("Search:"));
+        searchPanel.add(searchField);
+        searchPanel.add(searchButton);
+        
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setBackground(Color.WHITE);
+        topPanel.add(searchPanel, BorderLayout.NORTH);
+        topPanel.add(contentPanel, BorderLayout.CENTER);
+        
+        // Assemble the panel
+        employeeManagementPanel.add(headerPanel, BorderLayout.NORTH);
+        employeeManagementPanel.add(topPanel, BorderLayout.CENTER);
+        employeeManagementPanel.add(buttonPanel, BorderLayout.SOUTH);
+    }
+
+    // Add helper methods
+    private void refreshEmployeeTable(DefaultTableModel model) {
+        model.setRowCount(0);
+        
+        // Add null check for employeeList
+        if (employeeList != null) {
+            for (Employee emp : employeeList) {
+                model.addRow(new Object[]{
+                    emp.getEmployeeID(),
+                    emp.getLastName(),
+                    emp.getFirstName(),
+                    emp.getSssNumber(),
+                    emp.getPhilHealthNumber(),
+                    emp.getTinNumber(),
+                    emp.getPagIbigNumber()
+                });
+            }
+        }
+    }
+
+    private void filterEmployeeTable(DefaultTableModel model, String searchTerm) {
+        model.setRowCount(0);
+        
+        // Add null check for employeeList
+        if (employeeList != null) {
+            for (Employee emp : employeeList) {
+                if (searchTerm.isEmpty() ||
+                    String.valueOf(emp.getEmployeeID()).contains(searchTerm) ||
+                    emp.getLastName().toLowerCase().contains(searchTerm) ||
+                    emp.getFirstName().toLowerCase().contains(searchTerm) ||
+                    emp.getDepartment().toLowerCase().contains(searchTerm)) {
                     
+                    model.addRow(new Object[]{
+                        emp.getEmployeeID(),
+                        emp.getLastName(),
+                        emp.getFirstName(),
+                        emp.getSssNumber(),
+                        emp.getPhilHealthNumber(),
+                        emp.getTinNumber(),
+                        emp.getPagIbigNumber()
+                    });
+                }
+            }
+        }
+    }
+
+    // Employee Detail Frame
+    private void openEmployeeDetailFrame(Employee employee) {
+        JFrame detailFrame = new JFrame("Employee Details - " + employee.getName());
+        detailFrame.setSize(800, 600);
+        detailFrame.setLocationRelativeTo(this);
+        detailFrame.setLayout(new BorderLayout());
+        
+        // Header
+        JPanel headerPanel = new JPanel();
+        styleHeaderPanel(headerPanel);
+        JLabel titleLabel = new JLabel("Employee Details & Salary Computation", JLabel.CENTER);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        titleLabel.setForeground(Color.WHITE);
+        headerPanel.add(titleLabel);
+        
+        // Main content panel
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.setBackground(Color.WHITE);
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        // Employee details panel
+        JPanel detailsPanel = new JPanel(new GridLayout(7, 4, 10, 10));
+        detailsPanel.setBorder(BorderFactory.createTitledBorder("Employee Information"));
+        detailsPanel.setBackground(Color.WHITE);
+        
+        detailsPanel.add(new JLabel("Employee ID:"));
+        detailsPanel.add(new JLabel(String.valueOf(employee.getEmployeeID())));
+        detailsPanel.add(new JLabel("Department:"));
+        detailsPanel.add(new JLabel(employee.getDepartment()));
+        
+        detailsPanel.add(new JLabel("Last Name:"));
+        detailsPanel.add(new JLabel(employee.getLastName()));
+        detailsPanel.add(new JLabel("First Name:"));
+        detailsPanel.add(new JLabel(employee.getFirstName()));
+        
+        detailsPanel.add(new JLabel("Email:"));
+        detailsPanel.add(new JLabel(employee.getEmail()));
+        detailsPanel.add(new JLabel("Phone:"));
+        detailsPanel.add(new JLabel(employee.getPhoneNumber()));
+        
+        detailsPanel.add(new JLabel("Position:"));
+        detailsPanel.add(new JLabel(employee.getPosition()));
+        detailsPanel.add(new JLabel("Birthday:"));
+        detailsPanel.add(new JLabel(employee.getBirthday()));
+        
+        detailsPanel.add(new JLabel("SSS Number:"));
+        detailsPanel.add(new JLabel(employee.getSssNumber()));
+        detailsPanel.add(new JLabel("PhilHealth:"));
+        detailsPanel.add(new JLabel(employee.getPhilHealthNumber()));
+        
+        detailsPanel.add(new JLabel("TIN:"));
+        detailsPanel.add(new JLabel(employee.getTinNumber()));
+        detailsPanel.add(new JLabel("Pag-IBIG:"));
+        detailsPanel.add(new JLabel(employee.getPagIbigNumber()));
+        
+        detailsPanel.add(new JLabel("Basic Salary:"));
+        detailsPanel.add(new JLabel("$" + String.format("%.2f", employee.getBasicSalary())));
+        detailsPanel.add(new JLabel(""));
+        detailsPanel.add(new JLabel(""));
+        
+        // Salary computation panel
+        JPanel salaryPanel = createSalaryComputationPanel(employee);
+        
+        contentPanel.add(detailsPanel, BorderLayout.NORTH);
+        contentPanel.add(salaryPanel, BorderLayout.CENTER);
+        
+        detailFrame.add(headerPanel, BorderLayout.NORTH);
+        detailFrame.add(contentPanel, BorderLayout.CENTER);
+        detailFrame.setVisible(true);
+    }
+
+    // Salary computation panel for employee detail frame
+    private JPanel createSalaryComputationPanel(Employee employee) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createTitledBorder("Salary Computation"));
+        panel.setBackground(Color.WHITE);
+        
+        // Month selection
+        JPanel monthPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        monthPanel.setBackground(Color.WHITE);
+        
+        monthPanel.add(new JLabel("Select Month:"));
+        String[] months = {"January", "February", "March", "April", "May", "June",
+                        "July", "August", "September", "October", "November", "December"};
+        JComboBox<String> monthCombo = new JComboBox<>(months);
+        monthPanel.add(monthCombo);
+        
+        JButton computeButton = new JButton("Compute Salary");
+        forceButtonStyle(computeButton);
+        monthPanel.add(computeButton);
+        
+        // Results panel
+        JPanel resultsPanel = new JPanel(new GridLayout(8, 2, 10, 10));
+        resultsPanel.setBackground(Color.WHITE);
+        resultsPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        // Result labels
+        JLabel baseSalaryLabel = new JLabel("$0.00");
+        JLabel allowanceLabel = new JLabel("$0.00");
+        JLabel overtimeLabel = new JLabel("$0.00");
+        JLabel grossLabel = new JLabel("$0.00");
+        JLabel taxLabel = new JLabel("$0.00");
+        JLabel sssLabel = new JLabel("$0.00");
+        JLabel philHealthLabel = new JLabel("$0.00");
+        JLabel netLabel = new JLabel("$0.00");
+        
+        resultsPanel.add(new JLabel("Base Salary:"));
+        resultsPanel.add(baseSalaryLabel);
+        resultsPanel.add(new JLabel("Allowance:"));
+        resultsPanel.add(allowanceLabel);
+        resultsPanel.add(new JLabel("Overtime Pay:"));
+        resultsPanel.add(overtimeLabel);
+        resultsPanel.add(new JLabel("Gross Salary:"));
+        resultsPanel.add(grossLabel);
+        resultsPanel.add(new JLabel("Income Tax (15%):"));
+        resultsPanel.add(taxLabel);
+        resultsPanel.add(new JLabel("SSS (2%):"));
+        resultsPanel.add(sssLabel);
+        resultsPanel.add(new JLabel("PhilHealth (3%):"));
+        resultsPanel.add(philHealthLabel);
+        resultsPanel.add(new JLabel("Net Salary:"));
+        resultsPanel.add(netLabel);
+        
+        // Compute button action
+        computeButton.addActionListener(e -> {
+            String selectedMonth = (String) monthCombo.getSelectedItem();
+            
+            // Sample computation logic
+            double baseSalary = employee.getBasicSalary();
+            double allowance = baseSalary * 0.10; // 10% allowance
+            double overtime = baseSalary * 0.05; // 5% overtime (sample)
+            double grossSalary = baseSalary + allowance + overtime;
+            
+            double tax = grossSalary * 0.15;
+            double sss = grossSalary * 0.02;
+            double philHealth = grossSalary * 0.03;
+            double netSalary = grossSalary - (tax + sss + philHealth);
+            
+            // Update labels
+            baseSalaryLabel.setText("$" + String.format("%.2f", baseSalary));
+            allowanceLabel.setText("$" + String.format("%.2f", allowance));
+            overtimeLabel.setText("$" + String.format("%.2f", overtime));
+            grossLabel.setText("$" + String.format("%.2f", grossSalary));
+            taxLabel.setText("$" + String.format("%.2f", tax));
+            sssLabel.setText("$" + String.format("%.2f", sss));
+            philHealthLabel.setText("$" + String.format("%.2f", philHealth));
+            netLabel.setText("$" + String.format("%.2f", netSalary));
+            
+            JOptionPane.showMessageDialog(panel,
+                "Salary computed for " + selectedMonth + "\nNet Salary: $" + String.format("%.2f", netSalary),
+                "Computation Complete",
+                JOptionPane.INFORMATION_MESSAGE);
+        });
+        
+        panel.add(monthPanel, BorderLayout.NORTH);
+        panel.add(resultsPanel, BorderLayout.CENTER);
+        
+        return panel;
+    }
+
+    // New Employee Frame
+    private void openNewEmployeeFrame() {
+        JFrame newEmpFrame = new JFrame("Add New Employee");
+        newEmpFrame.setSize(600, 500);
+        newEmpFrame.setLocationRelativeTo(this);
+        newEmpFrame.setLayout(new BorderLayout());
+        
+        // Header
+        JPanel headerPanel = new JPanel();
+        styleHeaderPanel(headerPanel);
+        JLabel titleLabel = new JLabel("New Employee Registration", JLabel.CENTER);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        titleLabel.setForeground(Color.WHITE);
+        headerPanel.add(titleLabel);
+        
+        // Form panel
+        JPanel formPanel = new JPanel(new GridLayout(13, 2, 10, 10));
+        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        formPanel.setBackground(Color.WHITE);
+        
+        // Form fields
+        JTextField empIdField = new JTextField();
+        JTextField lastNameField = new JTextField();
+        JTextField firstNameField = new JTextField();
+        JTextField emailField = new JTextField();
+        JTextField phoneField = new JTextField();
+        JComboBox<String> deptCombo = new JComboBox<>(new String[]{"IT", "HR", "Finance", "Operations", "Marketing", "Sales"});
+        JTextField sssField = new JTextField();
+        JTextField philHealthField = new JTextField();
+        JTextField tinField = new JTextField();
+        JTextField pagIbigField = new JTextField();
+        JTextField positionField = new JTextField();
+        JTextField birthdayField = new JTextField();
+        JTextField salaryField = new JTextField();
+        
+        // Style fields
+        styleTextField(empIdField);
+        styleTextField(lastNameField);
+        styleTextField(firstNameField);
+        styleTextField(emailField);
+        styleTextField(phoneField);
+        styleTextField(sssField);
+        styleTextField(philHealthField);
+        styleTextField(tinField);
+        styleTextField(pagIbigField);
+        styleTextField(positionField);
+        styleTextField(birthdayField);
+        styleTextField(salaryField);
+        
+        // Add fields to form
+        formPanel.add(new JLabel("Employee ID:"));
+        formPanel.add(empIdField);
+        formPanel.add(new JLabel("Last Name:"));
+        formPanel.add(lastNameField);
+        formPanel.add(new JLabel("First Name:"));
+        formPanel.add(firstNameField);
+        formPanel.add(new JLabel("Email:"));
+        formPanel.add(emailField);
+        formPanel.add(new JLabel("Phone:"));
+        formPanel.add(phoneField);
+        formPanel.add(new JLabel("Department:"));
+        formPanel.add(deptCombo);
+        formPanel.add(new JLabel("SSS Number:"));
+        formPanel.add(sssField);
+        formPanel.add(new JLabel("PhilHealth Number:"));
+        formPanel.add(philHealthField);
+        formPanel.add(new JLabel("TIN:"));
+        formPanel.add(tinField);
+        formPanel.add(new JLabel("Pag-IBIG Number:"));
+        formPanel.add(pagIbigField);
+        formPanel.add(new JLabel("Position:"));
+        formPanel.add(positionField);
+        formPanel.add(new JLabel("Birthday (MM/DD/YYYY):"));
+        formPanel.add(birthdayField);
+        formPanel.add(new JLabel("Basic Salary:"));
+        formPanel.add(salaryField);
+        
+        // Button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        buttonPanel.setBackground(Color.WHITE);
+        
+        JButton saveButton = new JButton("Save Employee");
+        JButton cancelButton = new JButton("Cancel");
+        
+        forceButtonStyle(saveButton);
+        forceButtonStyle(cancelButton);
+        
+        saveButton.addActionListener(e -> {
+            try {
+                // Validate and create new employee
+                if (validateEmployeeForm(empIdField, lastNameField, firstNameField, emailField)) {
+                    Employee newEmployee = new Employee(
+                        Integer.parseInt(empIdField.getText().trim()),
+                        lastNameField.getText().trim(),
+                        firstNameField.getText().trim(),
+                        emailField.getText().trim(),
+                        phoneField.getText().trim(),
+                        (String) deptCombo.getSelectedItem(),
+                        sssField.getText().trim(),
+                        philHealthField.getText().trim(),
+                        tinField.getText().trim(),
+                        pagIbigField.getText().trim(),
+                        positionField.getText().trim(),
+                        birthdayField.getText().trim(),
+                        Double.parseDouble(salaryField.getText().trim())
+                    );
+                    
+                    // Add to list and save to CSV
+                    employeeList.add(newEmployee);
+                    CSVManager.saveEmployeesToCSV(employeeList);
+                    
+                    JOptionPane.showMessageDialog(newEmpFrame,
+                        "Employee added successfully!",
+                        "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+                    
+                    newEmpFrame.dispose();
+                    
+                    // Refresh the main table if it exists
+                    if (employeeManagementPanel != null) {
+                        cardLayout.show(mainPanel, "employeeManagement");
+                    }
+                    
+                }
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(employeeManagementPanel,
-                    "Please enter a valid employee number",
+                JOptionPane.showMessageDialog(newEmpFrame,
+                    "Please enter valid numbers for Employee ID and Salary",
                     "Input Error",
+                    JOptionPane.ERROR_MESSAGE);
+            } catch (IllegalArgumentException | SecurityException | OutOfMemoryError ex) {
+                JOptionPane.showMessageDialog(newEmpFrame,
+                    "Error saving employee: " + ex.getMessage(),
+                    "Error",
                     JOptionPane.ERROR_MESSAGE);
             }
         });
         
-        // List button action
-        listButton.addActionListener(e -> {
-            updateEmployeeListTable();
-            cardLayout.show(mainPanel, "employeeList");
-        });
+        cancelButton.addActionListener(e -> newEmpFrame.dispose());
         
-        // Assemble all panels
-        employeeManagementPanel.add(headerPanel, BorderLayout.NORTH);
-        employeeManagementPanel.add(formPanel, BorderLayout.CENTER);
-        employeeManagementPanel.add(buttonPanel, BorderLayout.SOUTH);
+        buttonPanel.add(saveButton);
+        buttonPanel.add(cancelButton);
+        
+        newEmpFrame.add(headerPanel, BorderLayout.NORTH);
+        newEmpFrame.add(formPanel, BorderLayout.CENTER);
+        newEmpFrame.add(buttonPanel, BorderLayout.SOUTH);
+        newEmpFrame.setVisible(true);
+    }
+
+    // Validation method
+    private boolean validateEmployeeForm(JTextField empIdField, JTextField lastNameField, 
+                                    JTextField firstNameField, JTextField emailField) {
+        if (empIdField.getText().trim().isEmpty() || 
+            lastNameField.getText().trim().isEmpty() ||
+            firstNameField.getText().trim().isEmpty() ||
+            emailField.getText().trim().isEmpty()) {
+            
+            JOptionPane.showMessageDialog(null,
+                "Please fill in all required fields (Employee ID, Names, Email)",
+                "Validation Error",
+                JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        
+        try {
+            int empId = Integer.parseInt(empIdField.getText().trim());
+            // Check for duplicate employee ID
+            for (Employee emp : employeeList) {
+                if (emp.getEmployeeID() == empId) {
+                    JOptionPane.showMessageDialog(null,
+                        "Employee ID " + empId + " already exists",
+                        "Duplicate ID",
+                        JOptionPane.ERROR_MESSAGE);
+                    return false;
+                }
+            }
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(null,
+                "Employee ID must be a valid number",
+                "Invalid ID",
+                JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+        
+        return true;
+    }
+
+    // Helper method to style text fields
+    private void styleTextField(JTextField field) {
+        field.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0, 102, 204)),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)));
     }
 
     private void createEmployeeListPanel() {
@@ -432,31 +763,6 @@ public class MotorPHApp extends JFrame {
         employeeListPanel.add(buttonPanel, BorderLayout.SOUTH);
     }
 
-    // Method to update the employee list table
-    private void updateEmployeeListTable() {
-        if (employeeListPanel != null) {
-            JScrollPane scrollPane = (JScrollPane) employeeListPanel.getComponent(1);
-            JTable table = (JTable) scrollPane.getViewport().getView();
-            DefaultTableModel model = (DefaultTableModel) table.getModel();
-            
-            // Clear existing data
-            model.setRowCount(0);
-            
-            // Add all employees to table
-            if (employeeList != null) {
-                for (Employee emp : employeeList) {
-                    model.addRow(new Object[]{
-                        emp.getEmployeeID(),
-                        emp.getName(),
-                        "N/A", // Birthday (add getter method)
-                        emp.getPhoneNumber(),
-                        "N/A", // Position (add getter method)
-                        emp.getDepartment()
-                    });
-                }
-            }
-        }
-    }
 
     // Method to filter employees based on search term
     private void filterEmployeeList(String searchTerm, DefaultTableModel model) {
@@ -617,8 +923,8 @@ public class MotorPHApp extends JFrame {
                     0.0
                 ));
                 
-                // Show dashboard and sidebar
-                cardLayout.show(mainPanel, "dashboard");
+                // Show Employee Management panel instead of dashboard
+                cardLayout.show(mainPanel, "employeeManagement");
                 
                 // Make the sidebar visible after login
                 Container parent = mainPanel.getParent();
@@ -629,6 +935,13 @@ public class MotorPHApp extends JFrame {
                         break;
                     }
                 }
+                
+                // Refresh the employee table with the latest data
+                if (employeeManagementPanel != null) {
+                    // Find the table model and refresh it
+                    refreshEmployeeTableAfterLogin();
+                }
+                
             } else {
                 JOptionPane.showMessageDialog(loginPanel, 
                     "Invalid email or password", 
@@ -640,6 +953,53 @@ public class MotorPHApp extends JFrame {
         loginPanel.add(headerPanel, BorderLayout.NORTH);
         loginPanel.add(formPanel, BorderLayout.CENTER);
         loginPanel.add(logoPanel, BorderLayout.SOUTH);
+    }
+
+    private void refreshEmployeeTableAfterLogin() {
+        // This method will be called after login to ensure the employee table is populated
+        try {
+            // Reload employee data from CSV
+            employeeList = CSVManager.loadEmployeesFromCSV();
+            if (employeeList == null) {
+                employeeList = new ArrayList<>();
+            }
+            
+            // Find the table model in the employee management panel and refresh it
+            refreshEmployeeManagementTable();
+            
+            // Force a repaint of the employee management panel
+            if (employeeManagementPanel != null) {
+                employeeManagementPanel.revalidate();
+                employeeManagementPanel.repaint();
+            }
+        } catch (Exception e) {
+            System.err.println("Error refreshing employee table after login: " + e.getMessage());
+        }
+    }
+
+    private void refreshEmployeeManagementTable() {
+        if (employeeManagementPanel == null) return;
+        
+        // Recursively find the JTable in the employee management panel
+        JTable employeeTable = findEmployeeTable(employeeManagementPanel);
+        if (employeeTable != null && employeeTable.getModel() instanceof DefaultTableModel) {
+            DefaultTableModel model = (DefaultTableModel) employeeTable.getModel();
+            refreshEmployeeTable(model);
+        }
+    }
+
+    private JTable findEmployeeTable(Container container) {
+        for (Component component : container.getComponents()) {
+            if (component instanceof JTable) {
+                return (JTable) component;
+            } else if (component instanceof Container) {
+                JTable found = findEmployeeTable((Container) component);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
     }
     
     private void createDashboardPanel() {
