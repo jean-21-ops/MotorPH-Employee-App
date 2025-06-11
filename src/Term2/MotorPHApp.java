@@ -244,10 +244,14 @@ public class MotorPHApp extends JFrame {
         titleLabel.setForeground(Color.WHITE);
         headerPanel.add(titleLabel, BorderLayout.CENTER);
         
-        // Main content with employee table
-        JPanel contentPanel = new JPanel(new BorderLayout());
-        contentPanel.setBackground(Color.WHITE);
-        contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        // Main content with split layout
+        JPanel mainContentPanel = new JPanel(new BorderLayout());
+        mainContentPanel.setBackground(Color.WHITE);
+        mainContentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        // LEFT SIDE: Employee table
+        JPanel tablePanel = new JPanel(new BorderLayout());
+        tablePanel.setBackground(Color.WHITE);
         
         // Employee table
         String[] columnNames = {"Employee #", "Last Name", "First Name", "SSS Number", "PhilHealth #", "TIN", "Pag-IBIG #"};
@@ -271,17 +275,46 @@ public class MotorPHApp extends JFrame {
         
         JScrollPane scrollPane = new JScrollPane(employeeTable);
         scrollPane.setBorder(BorderFactory.createTitledBorder("All Employees"));
-        scrollPane.setPreferredSize(new Dimension(700, 300));
+        scrollPane.setPreferredSize(new Dimension(500, 400));
         
-        contentPanel.add(scrollPane, BorderLayout.CENTER);
+        // Search panel for table
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        searchPanel.setBackground(Color.WHITE);
+        searchPanel.setBorder(BorderFactory.createTitledBorder("Search"));
         
-        // Button panel
+        JTextField searchField = new JTextField(20);
+        JButton searchButton = new JButton("Search");
+        forceButtonStyle(searchButton);
+        
+        searchButton.addActionListener(e -> {
+            String searchTerm = searchField.getText().toLowerCase().trim();
+            filterEmployeeTable(tableModel, searchTerm);
+        });
+        
+        searchPanel.add(new JLabel("Search:"));
+        searchPanel.add(searchField);
+        searchPanel.add(searchButton);
+        
+        tablePanel.add(searchPanel, BorderLayout.NORTH);
+        tablePanel.add(scrollPane, BorderLayout.CENTER);
+        
+        // RIGHT SIDE: Employee Details Form
+        JPanel detailsPanel = createEmployeeDetailsPanel();
+        
+        // Split pane to divide table and details
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, tablePanel, detailsPanel);
+        splitPane.setDividerLocation(520);
+        splitPane.setResizeWeight(0.6);
+        
+        mainContentPanel.add(splitPane, BorderLayout.CENTER);
+        
+        // Bottom button panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         buttonPanel.setBackground(Color.WHITE);
         
-        JButton viewEmployeeButton = new JButton("View Employee");
+        JButton viewEmployeeButton = new JButton("View Details");
         JButton newEmployeeButton = new JButton("New Employee");
-        JButton refreshButton = new JButton("Refresh");
+        JButton refreshButton = new JButton("Refresh Table");
         
         forceButtonStyle(viewEmployeeButton);
         forceButtonStyle(newEmployeeButton);
@@ -305,39 +338,327 @@ public class MotorPHApp extends JFrame {
         refreshButton.addActionListener(e -> {
             employeeList = CSVManager.loadEmployeesFromCSV();
             refreshEmployeeTable(tableModel);
+            clearEmployeeDetailsForm();
         });
         
         buttonPanel.add(viewEmployeeButton);
         buttonPanel.add(newEmployeeButton);
         buttonPanel.add(refreshButton);
         
-        // Search panel
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        searchPanel.setBackground(Color.WHITE);
-        searchPanel.setBorder(BorderFactory.createTitledBorder("Search"));
-        
-        JTextField searchField = new JTextField(20);
-        JButton searchButton = new JButton("Search");
-        forceButtonStyle(searchButton);
-        
-        searchButton.addActionListener(e -> {
-            String searchTerm = searchField.getText().toLowerCase().trim();
-            filterEmployeeTable(tableModel, searchTerm);
+        // Add table selection listener to populate form
+        employeeTable.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                int selectedRow = employeeTable.getSelectedRow();
+                if (selectedRow >= 0 && selectedRow < employeeList.size()) {
+                    populateEmployeeDetailsForm(employeeList.get(selectedRow));
+                    enableEditDeleteButtons(true);
+                } else {
+                    clearEmployeeDetailsForm();
+                    enableEditDeleteButtons(false);
+                }
+            }
         });
-        
-        searchPanel.add(new JLabel("Search:"));
-        searchPanel.add(searchField);
-        searchPanel.add(searchButton);
-        
-        JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setBackground(Color.WHITE);
-        topPanel.add(searchPanel, BorderLayout.NORTH);
-        topPanel.add(contentPanel, BorderLayout.CENTER);
         
         // Assemble the panel
         employeeManagementPanel.add(headerPanel, BorderLayout.NORTH);
-        employeeManagementPanel.add(topPanel, BorderLayout.CENTER);
+        employeeManagementPanel.add(mainContentPanel, BorderLayout.CENTER);
         employeeManagementPanel.add(buttonPanel, BorderLayout.SOUTH);
+    }
+
+    // Create the employee details form panel
+    private JPanel detailsPanel;
+    private JTextField detailEmpIdField, detailLastNameField, detailFirstNameField, 
+                    detailEmailField, detailPhoneField, detailSssField, 
+                    detailPhilHealthField, detailTinField, detailPagIbigField, 
+                    detailPositionField, detailBirthdayField, detailSalaryField;
+    private JComboBox<String> detailDeptCombo;
+    private JButton updateButton, deleteButton, clearButton;
+    private Employee currentSelectedEmployee = null;
+
+    private JPanel createEmployeeDetailsPanel() {
+        detailsPanel = new JPanel(new BorderLayout());
+        detailsPanel.setBackground(Color.WHITE);
+        detailsPanel.setBorder(BorderFactory.createTitledBorder("Employee Details"));
+        detailsPanel.setPreferredSize(new Dimension(350, 400));
+        
+        // Form panel
+        JPanel formPanel = new JPanel(new GridLayout(13, 2, 5, 8));
+        formPanel.setBackground(Color.WHITE);
+        formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        // Initialize form fields
+        detailEmpIdField = new JTextField();
+        detailLastNameField = new JTextField();
+        detailFirstNameField = new JTextField();
+        detailEmailField = new JTextField();
+        detailPhoneField = new JTextField();
+        detailDeptCombo = new JComboBox<>(new String[]{"IT", "HR", "Finance", "Operations", "Marketing", "Sales"});
+        detailSssField = new JTextField();
+        detailPhilHealthField = new JTextField();
+        detailTinField = new JTextField();
+        detailPagIbigField = new JTextField();
+        detailPositionField = new JTextField();
+        detailBirthdayField = new JTextField();
+        detailSalaryField = new JTextField();
+        
+        // Make Employee ID read-only for editing
+        detailEmpIdField.setEditable(false);
+        detailEmpIdField.setBackground(new Color(240, 240, 240));
+        
+        // Style all fields
+        styleTextField(detailLastNameField);
+        styleTextField(detailFirstNameField);
+        styleTextField(detailEmailField);
+        styleTextField(detailPhoneField);
+        styleTextField(detailSssField);
+        styleTextField(detailPhilHealthField);
+        styleTextField(detailTinField);
+        styleTextField(detailPagIbigField);
+        styleTextField(detailPositionField);
+        styleTextField(detailBirthdayField);
+        styleTextField(detailSalaryField);
+        
+        // Add fields to form
+        formPanel.add(new JLabel("Employee ID:"));
+        formPanel.add(detailEmpIdField);
+        formPanel.add(new JLabel("Last Name:"));
+        formPanel.add(detailLastNameField);
+        formPanel.add(new JLabel("First Name:"));
+        formPanel.add(detailFirstNameField);
+        formPanel.add(new JLabel("Email:"));
+        formPanel.add(detailEmailField);
+        formPanel.add(new JLabel("Phone:"));
+        formPanel.add(detailPhoneField);
+        formPanel.add(new JLabel("Department:"));
+        formPanel.add(detailDeptCombo);
+        formPanel.add(new JLabel("SSS Number:"));
+        formPanel.add(detailSssField);
+        formPanel.add(new JLabel("PhilHealth:"));
+        formPanel.add(detailPhilHealthField);
+        formPanel.add(new JLabel("TIN:"));
+        formPanel.add(detailTinField);
+        formPanel.add(new JLabel("Pag-IBIG:"));
+        formPanel.add(detailPagIbigField);
+        formPanel.add(new JLabel("Position:"));
+        formPanel.add(detailPositionField);
+        formPanel.add(new JLabel("Birthday:"));
+        formPanel.add(detailBirthdayField);
+        formPanel.add(new JLabel("Salary:"));
+        formPanel.add(detailSalaryField);
+        
+        // Button panel for form
+        JPanel formButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+        formButtonPanel.setBackground(Color.WHITE);
+        
+        updateButton = new JButton("Update");
+        deleteButton = new JButton("Delete");
+        clearButton = new JButton("Clear");
+        
+        forceButtonStyle(updateButton);
+        forceButtonStyle(deleteButton);
+        forceButtonStyle(clearButton);
+        
+        // Initially disable update and delete buttons
+        updateButton.setEnabled(false);
+        deleteButton.setEnabled(false);
+        
+        // Make delete button red
+        deleteButton.setBackground(new Color(220, 53, 69));
+        deleteButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                deleteButton.setBackground(new Color(200, 35, 51));
+            }
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                deleteButton.setBackground(new Color(220, 53, 69));
+            }
+        });
+        
+        // Add button actions
+        updateButton.addActionListener(e -> updateSelectedEmployee());
+        deleteButton.addActionListener(e -> deleteSelectedEmployee());
+        clearButton.addActionListener(e -> clearEmployeeDetailsForm());
+        
+        formButtonPanel.add(updateButton);
+        formButtonPanel.add(deleteButton);
+        formButtonPanel.add(clearButton);
+        
+        detailsPanel.add(formPanel, BorderLayout.CENTER);
+        detailsPanel.add(formButtonPanel, BorderLayout.SOUTH);
+        
+        return detailsPanel;
+    }
+
+    // Method to populate the form with selected employee data
+    private void populateEmployeeDetailsForm(Employee employee) {
+        currentSelectedEmployee = employee;
+        
+        detailEmpIdField.setText(String.valueOf(employee.getEmployeeID()));
+        detailLastNameField.setText(employee.getLastName());
+        detailFirstNameField.setText(employee.getFirstName());
+        detailEmailField.setText(employee.getEmail());
+        detailPhoneField.setText(employee.getPhoneNumber());
+        detailDeptCombo.setSelectedItem(employee.getDepartment());
+        detailSssField.setText(employee.getSssNumber());
+        detailPhilHealthField.setText(employee.getPhilHealthNumber());
+        detailTinField.setText(employee.getTinNumber());
+        detailPagIbigField.setText(employee.getPagIbigNumber());
+        detailPositionField.setText(employee.getPosition());
+        detailBirthdayField.setText(employee.getBirthday());
+        detailSalaryField.setText(String.valueOf(employee.getBasicSalary()));
+    }
+
+    // Method to clear the form
+    private void clearEmployeeDetailsForm() {
+        currentSelectedEmployee = null;
+        
+        detailEmpIdField.setText("");
+        detailLastNameField.setText("");
+        detailFirstNameField.setText("");
+        detailEmailField.setText("");
+        detailPhoneField.setText("");
+        detailDeptCombo.setSelectedIndex(0);
+        detailSssField.setText("");
+        detailPhilHealthField.setText("");
+        detailTinField.setText("");
+        detailPagIbigField.setText("");
+        detailPositionField.setText("");
+        detailBirthdayField.setText("");
+        detailSalaryField.setText("");
+    }
+
+    // Method to enable/disable edit and delete buttons
+    private void enableEditDeleteButtons(boolean enabled) {
+        updateButton.setEnabled(enabled);
+        deleteButton.setEnabled(enabled);
+    }
+
+    // Method to update selected employee
+    private void updateSelectedEmployee() {
+        if (currentSelectedEmployee == null) {
+            JOptionPane.showMessageDialog(employeeManagementPanel,
+                "No employee selected for update",
+                "Update Error",
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        try {
+            // Validate required fields
+            if (detailLastNameField.getText().trim().isEmpty() ||
+                detailFirstNameField.getText().trim().isEmpty() ||
+                detailEmailField.getText().trim().isEmpty()) {
+                
+                JOptionPane.showMessageDialog(employeeManagementPanel,
+                    "Please fill in all required fields (Names, Email)",
+                    "Validation Error",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            // Validate salary
+            double salary;
+            try {
+                salary = Double.parseDouble(detailSalaryField.getText().trim());
+                if (salary < 0) {
+                    throw new NumberFormatException("Salary cannot be negative");
+                }
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(employeeManagementPanel,
+                    "Please enter a valid salary amount",
+                    "Invalid Salary",
+                    JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            // Confirm update
+            int confirm = JOptionPane.showConfirmDialog(employeeManagementPanel,
+                "Are you sure you want to update employee: " + currentSelectedEmployee.getName() + "?",
+                "Confirm Update",
+                JOptionPane.YES_NO_OPTION);
+                
+            if (confirm == JOptionPane.YES_OPTION) {
+                // Update employee object
+                currentSelectedEmployee.setLastName(detailLastNameField.getText().trim());
+                currentSelectedEmployee.setFirstName(detailFirstNameField.getText().trim());
+                currentSelectedEmployee.setEmail(detailEmailField.getText().trim());
+                currentSelectedEmployee.setPhoneNumber(detailPhoneField.getText().trim());
+                currentSelectedEmployee.setDepartment((String) detailDeptCombo.getSelectedItem());
+                currentSelectedEmployee.setSssNumber(detailSssField.getText().trim());
+                currentSelectedEmployee.setPhilHealthNumber(detailPhilHealthField.getText().trim());
+                currentSelectedEmployee.setTinNumber(detailTinField.getText().trim());
+                currentSelectedEmployee.setPagIbigNumber(detailPagIbigField.getText().trim());
+                currentSelectedEmployee.setPosition(detailPositionField.getText().trim());
+                currentSelectedEmployee.setBirthday(detailBirthdayField.getText().trim());
+                currentSelectedEmployee.setBasicSalary(salary);
+                
+                // Save to CSV
+                CSVManager.saveEmployeesToCSV(employeeList);
+                
+                // Refresh table
+                refreshEmployeeManagementTable();
+                
+                JOptionPane.showMessageDialog(employeeManagementPanel,
+                    "Employee updated successfully!",
+                    "Update Success",
+                    JOptionPane.INFORMATION_MESSAGE);
+            }
+            
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(employeeManagementPanel,
+                "Error updating employee: " + e.getMessage(),
+                "Update Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // Method to delete selected employee
+    private void deleteSelectedEmployee() {
+        if (currentSelectedEmployee == null) {
+            JOptionPane.showMessageDialog(employeeManagementPanel,
+                "No employee selected for deletion",
+                "Delete Error",
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        // Confirm deletion with warning
+        int confirm = JOptionPane.showConfirmDialog(employeeManagementPanel,
+            "⚠️ WARNING: This will permanently delete employee:\n\n" +
+            "ID: " + currentSelectedEmployee.getEmployeeID() + "\n" +
+            "Name: " + currentSelectedEmployee.getName() + "\n" +
+            "Department: " + currentSelectedEmployee.getDepartment() + "\n\n" +
+            "This action cannot be undone. Are you sure?",
+            "Confirm Deletion",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE);
+            
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                // Remove from list
+                employeeList.remove(currentSelectedEmployee);
+                
+                // Save updated list to CSV
+                CSVManager.saveEmployeesToCSV(employeeList);
+                
+                // Clear form and refresh table
+                clearEmployeeDetailsForm();
+                enableEditDeleteButtons(false);
+                refreshEmployeeManagementTable();
+                
+                JOptionPane.showMessageDialog(employeeManagementPanel,
+                    "Employee deleted successfully!",
+                    "Delete Success",
+                    JOptionPane.INFORMATION_MESSAGE);
+                    
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(employeeManagementPanel,
+                    "Error deleting employee: " + e.getMessage(),
+                    "Delete Error",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 
     // Add helper methods
