@@ -368,9 +368,12 @@ public class MotorPHApp extends JFrame {
     // Create the employee details form panel
     private JPanel detailsPanel;
     private JTextField detailEmpIdField, detailLastNameField, detailFirstNameField, 
-                    detailEmailField, detailPhoneField, detailSssField, 
+                    detailBirthdayField, detailAddressField, detailPhoneField, detailSssField, 
                     detailPhilHealthField, detailTinField, detailPagIbigField, 
-                    detailPositionField, detailBirthdayField, detailSalaryField;
+                    detailPositionField, detailSalaryField, detailSupervisorField;
+    private JComboBox<String> detailStatusCombo;
+    // Legacy fields for compatibility
+    private JTextField detailEmailField;
     private JComboBox<String> detailDeptCombo;
     private JButton updateButton, deleteButton, clearButton;
     private Employee currentSelectedEmployee = null;
@@ -382,7 +385,7 @@ public class MotorPHApp extends JFrame {
         detailsPanel.setPreferredSize(new Dimension(350, 400));
         
         // Form panel
-        JPanel formPanel = new JPanel(new GridLayout(13, 2, 5, 8));
+        JPanel formPanel = new JPanel(new GridLayout(16, 2, 5, 8));
         formPanel.setBackground(Color.WHITE);
         formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
@@ -390,16 +393,21 @@ public class MotorPHApp extends JFrame {
         detailEmpIdField = new JTextField();
         detailLastNameField = new JTextField();
         detailFirstNameField = new JTextField();
-        detailEmailField = new JTextField();
+        detailBirthdayField = new JTextField();
+        detailAddressField = new JTextField();
         detailPhoneField = new JTextField();
-        detailDeptCombo = new JComboBox<>(new String[]{"IT", "HR", "Finance", "Operations", "Marketing", "Sales"});
         detailSssField = new JTextField();
         detailPhilHealthField = new JTextField();
         detailTinField = new JTextField();
         detailPagIbigField = new JTextField();
+        detailStatusCombo = new JComboBox<>(new String[]{"Regular", "Probationary", "Contractual"});
         detailPositionField = new JTextField();
-        detailBirthdayField = new JTextField();
+        detailSupervisorField = new JTextField();
         detailSalaryField = new JTextField();
+        
+        // Legacy fields for compatibility
+        detailEmailField = new JTextField();
+        detailDeptCombo = new JComboBox<>(new String[]{"Executive", "IT", "HR", "Finance", "Operations", "Marketing", "Sales", "Accounting", "Customer Service", "General"});
         
         // Make Employee ID read-only for editing
         detailEmpIdField.setEditable(false);
@@ -408,15 +416,17 @@ public class MotorPHApp extends JFrame {
         // Style all fields
         styleTextField(detailLastNameField);
         styleTextField(detailFirstNameField);
-        styleTextField(detailEmailField);
+        styleTextField(detailBirthdayField);
+        styleTextField(detailAddressField);
         styleTextField(detailPhoneField);
         styleTextField(detailSssField);
         styleTextField(detailPhilHealthField);
         styleTextField(detailTinField);
         styleTextField(detailPagIbigField);
         styleTextField(detailPositionField);
-        styleTextField(detailBirthdayField);
+        styleTextField(detailSupervisorField);
         styleTextField(detailSalaryField);
+        styleTextField(detailEmailField);
         
         // Add fields to form
         formPanel.add(new JLabel("Employee ID:"));
@@ -425,12 +435,12 @@ public class MotorPHApp extends JFrame {
         formPanel.add(detailLastNameField);
         formPanel.add(new JLabel("First Name:"));
         formPanel.add(detailFirstNameField);
-        formPanel.add(new JLabel("Email:"));
-        formPanel.add(detailEmailField);
+        formPanel.add(new JLabel("Birthday:"));
+        formPanel.add(detailBirthdayField);
+        formPanel.add(new JLabel("Address:"));
+        formPanel.add(detailAddressField);
         formPanel.add(new JLabel("Phone:"));
         formPanel.add(detailPhoneField);
-        formPanel.add(new JLabel("Department:"));
-        formPanel.add(detailDeptCombo);
         formPanel.add(new JLabel("SSS Number:"));
         formPanel.add(detailSssField);
         formPanel.add(new JLabel("PhilHealth:"));
@@ -439,12 +449,18 @@ public class MotorPHApp extends JFrame {
         formPanel.add(detailTinField);
         formPanel.add(new JLabel("Pag-IBIG:"));
         formPanel.add(detailPagIbigField);
+        formPanel.add(new JLabel("Status:"));
+        formPanel.add(detailStatusCombo);
         formPanel.add(new JLabel("Position:"));
         formPanel.add(detailPositionField);
-        formPanel.add(new JLabel("Birthday:"));
-        formPanel.add(detailBirthdayField);
-        formPanel.add(new JLabel("Salary:"));
+        formPanel.add(new JLabel("Supervisor:"));
+        formPanel.add(detailSupervisorField);
+        formPanel.add(new JLabel("Basic Salary:"));
         formPanel.add(detailSalaryField);
+        formPanel.add(new JLabel("Email:"));
+        formPanel.add(detailEmailField);
+        formPanel.add(new JLabel("Department:"));
+        formPanel.add(detailDeptCombo);
         
         // Button panel for form
         JPanel formButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
@@ -497,16 +513,21 @@ public class MotorPHApp extends JFrame {
         detailEmpIdField.setText(String.valueOf(employee.getEmployeeID()));
         detailLastNameField.setText(employee.getLastName());
         detailFirstNameField.setText(employee.getFirstName());
-        detailEmailField.setText(employee.getEmail());
+        detailBirthdayField.setText(employee.getBirthday());
+        detailAddressField.setText(employee.getAddress());
         detailPhoneField.setText(employee.getPhoneNumber());
-        detailDeptCombo.setSelectedItem(employee.getDepartment());
         detailSssField.setText(employee.getSssNumber());
         detailPhilHealthField.setText(employee.getPhilHealthNumber());
         detailTinField.setText(employee.getTinNumber());
         detailPagIbigField.setText(employee.getPagIbigNumber());
+        detailStatusCombo.setSelectedItem(employee.getStatus());
         detailPositionField.setText(employee.getPosition());
-        detailBirthdayField.setText(employee.getBirthday());
+        detailSupervisorField.setText(employee.getImmediateSupervisor());
         detailSalaryField.setText(String.valueOf(employee.getBasicSalary()));
+        
+        // Legacy fields for compatibility
+        detailEmailField.setText(employee.getEmail());
+        detailDeptCombo.setSelectedItem(employee.getDepartment());
     }
 
     // Method to clear the form
@@ -516,16 +537,21 @@ public class MotorPHApp extends JFrame {
         detailEmpIdField.setText("");
         detailLastNameField.setText("");
         detailFirstNameField.setText("");
-        detailEmailField.setText("");
+        detailBirthdayField.setText("");
+        detailAddressField.setText("");
         detailPhoneField.setText("");
-        detailDeptCombo.setSelectedIndex(0);
         detailSssField.setText("");
         detailPhilHealthField.setText("");
         detailTinField.setText("");
         detailPagIbigField.setText("");
+        detailStatusCombo.setSelectedIndex(0);
         detailPositionField.setText("");
-        detailBirthdayField.setText("");
+        detailSupervisorField.setText("");
         detailSalaryField.setText("");
+        
+        // Legacy fields
+        detailEmailField.setText("");
+        detailDeptCombo.setSelectedIndex(0);
     }
 
     // Method to enable/disable edit and delete buttons
@@ -579,19 +605,24 @@ public class MotorPHApp extends JFrame {
                 JOptionPane.YES_NO_OPTION);
                 
             if (confirm == JOptionPane.YES_OPTION) {
-                // Update employee object
+                // Update employee object with new CSV fields
                 currentSelectedEmployee.setLastName(detailLastNameField.getText().trim());
                 currentSelectedEmployee.setFirstName(detailFirstNameField.getText().trim());
-                currentSelectedEmployee.setEmail(detailEmailField.getText().trim());
+                currentSelectedEmployee.setBirthday(detailBirthdayField.getText().trim());
+                currentSelectedEmployee.setAddress(detailAddressField.getText().trim());
                 currentSelectedEmployee.setPhoneNumber(detailPhoneField.getText().trim());
-                currentSelectedEmployee.setDepartment((String) detailDeptCombo.getSelectedItem());
                 currentSelectedEmployee.setSssNumber(detailSssField.getText().trim());
                 currentSelectedEmployee.setPhilHealthNumber(detailPhilHealthField.getText().trim());
                 currentSelectedEmployee.setTinNumber(detailTinField.getText().trim());
                 currentSelectedEmployee.setPagIbigNumber(detailPagIbigField.getText().trim());
+                currentSelectedEmployee.setStatus((String) detailStatusCombo.getSelectedItem());
                 currentSelectedEmployee.setPosition(detailPositionField.getText().trim());
-                currentSelectedEmployee.setBirthday(detailBirthdayField.getText().trim());
+                currentSelectedEmployee.setImmediateSupervisor(detailSupervisorField.getText().trim());
                 currentSelectedEmployee.setBasicSalary(salary);
+                
+                // Update legacy fields for compatibility
+                currentSelectedEmployee.setEmail(detailEmailField.getText().trim());
+                currentSelectedEmployee.setDepartment((String) detailDeptCombo.getSelectedItem());
                 
                 // Save to CSV
                 CSVManager.saveEmployeesToCSV(employeeList);
