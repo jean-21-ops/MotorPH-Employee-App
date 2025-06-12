@@ -901,7 +901,7 @@ public class MotorPHApp extends JFrame {
     // New Employee Frame
     private void openNewEmployeeFrame() {
         JFrame newEmpFrame = new JFrame("Add New Employee");
-        newEmpFrame.setSize(600, 500);
+        newEmpFrame.setSize(700, 700);
         newEmpFrame.setLocationRelativeTo(this);
         newEmpFrame.setLayout(new BorderLayout());
         
@@ -914,38 +914,45 @@ public class MotorPHApp extends JFrame {
         headerPanel.add(titleLabel);
         
         // Form panel
-        JPanel formPanel = new JPanel(new GridLayout(13, 2, 10, 10));
+        JPanel formPanel = new JPanel(new GridLayout(16, 2, 10, 10));
         formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         formPanel.setBackground(Color.WHITE);
         
-        // Form fields
+        // Form fields - Updated to match CSV structure
         JTextField empIdField = new JTextField();
         JTextField lastNameField = new JTextField();
         JTextField firstNameField = new JTextField();
-        JTextField emailField = new JTextField();
+        JTextField birthdayField = new JTextField();
+        JTextField addressField = new JTextField();
         JTextField phoneField = new JTextField();
-        JComboBox<String> deptCombo = new JComboBox<>(new String[]{"IT", "HR", "Finance", "Operations", "Marketing", "Sales"});
         JTextField sssField = new JTextField();
         JTextField philHealthField = new JTextField();
         JTextField tinField = new JTextField();
         JTextField pagIbigField = new JTextField();
+        JComboBox<String> statusCombo = new JComboBox<>(new String[]{"Regular", "Probationary", "Contractual"});
         JTextField positionField = new JTextField();
-        JTextField birthdayField = new JTextField();
+        JTextField supervisorField = new JTextField();
         JTextField salaryField = new JTextField();
+        
+        // Legacy fields for compatibility (auto-filled)
+        JTextField emailField = new JTextField();
+        JComboBox<String> deptCombo = new JComboBox<>(new String[]{"Executive", "IT", "HR", "Finance", "Operations", "Marketing", "Sales", "Accounting", "Customer Service", "General"});
         
         // Style fields
         styleTextField(empIdField);
         styleTextField(lastNameField);
         styleTextField(firstNameField);
-        styleTextField(emailField);
+        styleTextField(birthdayField);
+        styleTextField(addressField);
         styleTextField(phoneField);
         styleTextField(sssField);
         styleTextField(philHealthField);
         styleTextField(tinField);
         styleTextField(pagIbigField);
         styleTextField(positionField);
-        styleTextField(birthdayField);
+        styleTextField(supervisorField);
         styleTextField(salaryField);
+        styleTextField(emailField);
         
         // Add fields to form
         formPanel.add(new JLabel("Employee ID:"));
@@ -954,12 +961,12 @@ public class MotorPHApp extends JFrame {
         formPanel.add(lastNameField);
         formPanel.add(new JLabel("First Name:"));
         formPanel.add(firstNameField);
-        formPanel.add(new JLabel("Email:"));
-        formPanel.add(emailField);
+        formPanel.add(new JLabel("Birthday (MM/DD/YYYY):"));
+        formPanel.add(birthdayField);
+        formPanel.add(new JLabel("Address:"));
+        formPanel.add(addressField);
         formPanel.add(new JLabel("Phone:"));
         formPanel.add(phoneField);
-        formPanel.add(new JLabel("Department:"));
-        formPanel.add(deptCombo);
         formPanel.add(new JLabel("SSS Number:"));
         formPanel.add(sssField);
         formPanel.add(new JLabel("PhilHealth Number:"));
@@ -968,12 +975,39 @@ public class MotorPHApp extends JFrame {
         formPanel.add(tinField);
         formPanel.add(new JLabel("Pag-IBIG Number:"));
         formPanel.add(pagIbigField);
+        formPanel.add(new JLabel("Status:"));
+        formPanel.add(statusCombo);
         formPanel.add(new JLabel("Position:"));
         formPanel.add(positionField);
-        formPanel.add(new JLabel("Birthday (MM/DD/YYYY):"));
-        formPanel.add(birthdayField);
+        formPanel.add(new JLabel("Supervisor:"));
+        formPanel.add(supervisorField);
         formPanel.add(new JLabel("Basic Salary:"));
         formPanel.add(salaryField);
+        formPanel.add(new JLabel("Email (Auto-filled):"));
+        formPanel.add(emailField);
+        formPanel.add(new JLabel("Department (Auto-filled):"));
+        formPanel.add(deptCombo);
+        
+        // Auto-fill email when names change
+        Runnable updateAutoFields = () -> {
+            String firstName = firstNameField.getText().trim().toLowerCase();
+            String lastName = lastNameField.getText().trim().toLowerCase();
+            if (!firstName.isEmpty() && !lastName.isEmpty()) {
+                emailField.setText(firstName + "." + lastName + "@motorph.com");
+            }
+        };
+        
+        firstNameField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                updateAutoFields.run();
+            }
+        });
+        
+        lastNameField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                updateAutoFields.run();
+            }
+        });
         
         // Button panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
@@ -989,21 +1023,37 @@ public class MotorPHApp extends JFrame {
             try {
                 // Validate and create new employee
                 if (validateEmployeeForm(empIdField, lastNameField, firstNameField, emailField)) {
+                    // Parse salary and default values for new fields
+                    double basicSalary = Double.parseDouble(salaryField.getText().trim());
+                    
+                    // Create new employee using the full CSV constructor
                     Employee newEmployee = new Employee(
                         Integer.parseInt(empIdField.getText().trim()),
                         lastNameField.getText().trim(),
                         firstNameField.getText().trim(),
-                        emailField.getText().trim(),
+                        birthdayField.getText().trim(),
+                        addressField.getText().trim(),
                         phoneField.getText().trim(),
-                        (String) deptCombo.getSelectedItem(),
                         sssField.getText().trim(),
                         philHealthField.getText().trim(),
                         tinField.getText().trim(),
                         pagIbigField.getText().trim(),
+                        (String) statusCombo.getSelectedItem(),
                         positionField.getText().trim(),
-                        birthdayField.getText().trim(),
-                        Double.parseDouble(salaryField.getText().trim())
+                        supervisorField.getText().trim(),
+                        basicSalary,
+                        1500.0, // Rice subsidy default
+                        1000.0, // Phone allowance default
+                        1000.0, // Clothing allowance default
+                        basicSalary / 2, // Gross semi-monthly rate
+                        basicSalary / 168 // Hourly rate (approximate)
                     );
+                    
+                    // Set legacy fields manually for compatibility
+                    if (!emailField.getText().trim().isEmpty()) {
+                        newEmployee.setEmail(emailField.getText().trim());
+                    }
+                    newEmployee.setDepartment((String) deptCombo.getSelectedItem());
                     
                     // Add to list and save to CSV
                     employeeList.add(newEmployee);
@@ -1027,7 +1077,7 @@ public class MotorPHApp extends JFrame {
                     "Please enter valid numbers for Employee ID and Salary",
                     "Input Error",
                     JOptionPane.ERROR_MESSAGE);
-            } catch (IllegalArgumentException | SecurityException | OutOfMemoryError ex) {
+            } catch (Exception ex) {
                 JOptionPane.showMessageDialog(newEmpFrame,
                     "Error saving employee: " + ex.getMessage(),
                     "Error",
