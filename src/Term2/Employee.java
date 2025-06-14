@@ -269,6 +269,7 @@ public class Employee {
     }
     
     // Helper method to properly parse CSV lines with quotes and commas
+    @SuppressWarnings("CollectionsToArray")
     private static String[] parseCSVLine(String line) {
         java.util.List<String> result = new java.util.ArrayList<>();
         boolean inQuotes = false;

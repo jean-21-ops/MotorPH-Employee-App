@@ -1,6 +1,8 @@
 package Term2;
 
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import javax.swing.*;
@@ -31,6 +33,7 @@ public class MotorPHApp extends JFrame {
     private JPanel employeeListPanel;
     private JButton themeToggleButton;
     private ArrayList<Employee> employeeList; // To store employees
+    private JLabel statusLabel; // Status bar for user feedback
         
     public MotorPHApp() {
         // Try to set system look and feel for better appearance
@@ -63,6 +66,9 @@ public class MotorPHApp extends JFrame {
         setSize(900, 650);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
+
+        // Add keyboard shortcuts
+        setupKeyboardShortcuts();
 
         // Create the main content panel with BorderLayout
         JPanel mainContentPanel = new JPanel(new BorderLayout());
@@ -111,71 +117,157 @@ public class MotorPHApp extends JFrame {
         
         cardLayout.show(mainPanel, "login");
         
+        // Create and add status bar
+        statusLabel = new JLabel("Ready - MotorPH Employee Management System");
+        statusLabel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLoweredBevelBorder(),
+            BorderFactory.createEmptyBorder(2, 5, 2, 5)
+        ));
+        statusLabel.setFont(new Font("Arial", Font.PLAIN, 11));
+        mainContentPanel.add(statusLabel, BorderLayout.SOUTH);
+        
         add(mainContentPanel);
     }
 
-    // Method to create the persistent sidebar
+    // Setup keyboard shortcuts for improved accessibility
+    private void setupKeyboardShortcuts() {
+        // Create input and action maps for the main frame
+        JRootPane rootPane = getRootPane();
+        InputMap inputMap = rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        ActionMap actionMap = rootPane.getActionMap();
+        
+        // Ctrl+T for theme toggle
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_T, KeyEvent.CTRL_DOWN_MASK), "toggleTheme");
+        actionMap.put("toggleTheme", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (themeToggleButton != null) {
+                    themeToggleButton.doClick();
+                }
+            }
+        });
+        
+        // Ctrl+N for new employee
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_N, KeyEvent.CTRL_DOWN_MASK), "newEmployee");
+        actionMap.put("newEmployee", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                cardLayout.show(mainPanel, "employeeManagement");
+                // Simulate clicking the new employee button
+                SwingUtilities.invokeLater(() -> openNewEmployeeFrame());
+            }
+        });
+        
+        // Ctrl+E for employee management
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_E, KeyEvent.CTRL_DOWN_MASK), "employeeManagement");
+        actionMap.put("employeeManagement", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                cardLayout.show(mainPanel, "employeeManagement");
+            }
+        });
+        
+        // Ctrl+P for payroll
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_P, KeyEvent.CTRL_DOWN_MASK), "payroll");
+        actionMap.put("payroll", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                cardLayout.show(mainPanel, "payroll");
+            }
+        });
+        
+        // Ctrl+A for attendance
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_A, KeyEvent.CTRL_DOWN_MASK), "attendance");
+        actionMap.put("attendance", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                cardLayout.show(mainPanel, "attendance");
+            }
+        });
+    }
+
+    // Method to create the enhanced sidebar with modern design
     private JPanel createSidebarPanel() {
-        // Create menu panel (sidebar) with blue background
+        // Create menu panel (sidebar) with enhanced styling
         JPanel menuPanel = new JPanel();
         menuPanel.setLayout(new BoxLayout(menuPanel, BoxLayout.Y_AXIS));
         menuPanel.setBackground(ThemeManager.getAccentColor());
-        menuPanel.setBorder(BorderFactory.createEmptyBorder(20, 10, 20, 10));
-        menuPanel.setPreferredSize(new Dimension(220, 600));
+        menuPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 0, 3, new Color(255, 255, 255, 50)),
+            BorderFactory.createEmptyBorder(25, 15, 25, 15)
+        ));
+        menuPanel.setPreferredSize(new Dimension(250, 600));
         
-        // Add company logo/name to the top of sidebar
-        JLabel logoLabel = new JLabel("MotorPH");
-        logoLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        // Enhanced company logo section
+        JPanel logoPanel = new JPanel();
+        logoPanel.setLayout(new BoxLayout(logoPanel, BoxLayout.Y_AXIS));
+        logoPanel.setBackground(ThemeManager.getAccentColor());
+        logoPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 20, 0));
+        
+        JLabel logoLabel = new JLabel("🏢 MotorPH");
+        logoLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         logoLabel.setForeground(Color.WHITE);
         logoLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        logoLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
-        menuPanel.add(logoLabel);
         
-        // Add theme toggle button at the top
+        JLabel subLabel = new JLabel("Employee Management System");
+        subLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        subLabel.setForeground(new Color(255, 255, 255, 180));
+        subLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        logoPanel.add(logoLabel);
+        logoPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+        logoPanel.add(subLabel);
+        menuPanel.add(logoPanel);
+        
+        // Enhanced theme toggle button
         themeToggleButton = new JButton(ThemeManager.isDarkMode() ? "☀️ Light Mode" : "🌙 Dark Mode");
-        styleMenuButton(themeToggleButton);
-        themeToggleButton.setBackground(new Color(255, 255, 255, 30)); // Semi-transparent
+        themeToggleButton.setToolTipText("Toggle between light and dark themes (Ctrl+T)");
+        themeToggleButton.getAccessibleContext().setAccessibleName("Theme Toggle");
+        themeToggleButton.getAccessibleContext().setAccessibleDescription("Switch between light and dark mode themes");
+        enhanceMenuButton(themeToggleButton);
+        themeToggleButton.setBackground(new Color(255, 255, 255, 20));
+        themeToggleButton.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(255, 255, 255, 100), 1),
+            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+        ));
         themeToggleButton.addActionListener(e -> {
             ThemeManager.toggleTheme(this);
             updateThemeToggleButton();
             updateAllButtonStyles();
+            ThemeManager.forceTextColorUpdate(this);
+            updateStatus("Theme switched to " + (ThemeManager.isDarkMode() ? "Dark Mode" : "Light Mode"));
         });
         menuPanel.add(themeToggleButton);
-        menuPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+        menuPanel.add(Box.createRigidArea(new Dimension(0, 20)));
         
-        // Create menu buttons
-        JButton employeeManagementButton = new JButton("Employee Management");
-        JButton employeeInfoButton = new JButton("Employee Information");
-        JButton payrollButton = new JButton("Payroll & Calculations");
-        JButton leaveRequestButton = new JButton("Leave Requests");
-        JButton taxFormButton = new JButton("Tax Forms");
-        JButton attendanceButton = new JButton("Attendance Records");
-        JButton logoutButton = new JButton("Logout");
+        // Create enhanced menu buttons with icons
+        JButton employeeManagementButton = createEnhancedMenuButton("👥 Employee Management", "Manage employee records and information (Ctrl+E)");
+        JButton employeeInfoButton = createEnhancedMenuButton("👤 Employee Information", "View and edit personal information");
+        JButton payrollButton = createEnhancedMenuButton("💰 Payroll & Calculations", "Calculate salaries and deductions (Ctrl+P)");
+        JButton leaveRequestButton = createEnhancedMenuButton("📅 Leave Requests", "Submit and manage leave requests");
+        JButton taxFormButton = createEnhancedMenuButton("📄 Tax Forms", "Generate and download tax documents");
+        JButton attendanceButton = createEnhancedMenuButton("⏰ Attendance Records", "Track time and attendance (Ctrl+A)");
         
-        // Style all menu buttons
-        styleMenuButton(employeeManagementButton);
-        styleMenuButton(employeeInfoButton);
-        styleMenuButton(payrollButton);
-        styleMenuButton(leaveRequestButton);
-        styleMenuButton(taxFormButton);
-        styleMenuButton(attendanceButton);
-        styleMenuButton(logoutButton);
+        // Add buttons with enhanced spacing
+        addMenuButton(menuPanel, employeeInfoButton);
+        addMenuButton(menuPanel, payrollButton);
+        addMenuButton(menuPanel, leaveRequestButton);
+        addMenuButton(menuPanel, taxFormButton);
+        addMenuButton(menuPanel, attendanceButton);
+        addMenuButton(menuPanel, employeeManagementButton);
         
-        // Add spacing between buttons
-        menuPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        menuPanel.add(employeeInfoButton);
-        menuPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        menuPanel.add(payrollButton);
-        menuPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        menuPanel.add(leaveRequestButton);
-        menuPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        menuPanel.add(taxFormButton);
-        menuPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        menuPanel.add(attendanceButton);
-        menuPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        menuPanel.add(employeeManagementButton);
+        // Add flexible space
         menuPanel.add(Box.createVerticalGlue());
-        menuPanel.add(logoutButton);
+        
+        // Enhanced logout section
+        JPanel logoutPanel = new JPanel(new BorderLayout());
+        logoutPanel.setBackground(ThemeManager.getAccentColor());
+        logoutPanel.setBorder(BorderFactory.createEmptyBorder(15, 0, 0, 0));
+        
+        JButton logoutButton = createEnhancedMenuButton("🚪 Logout", "Sign out of the application");
+        logoutButton.setBackground(new Color(220, 53, 69, 180));
+        logoutPanel.add(logoutButton, BorderLayout.CENTER);
+        menuPanel.add(logoutPanel);
         
         // Add button actions (existing code)
         employeeManagementButton.addActionListener(e -> cardLayout.show(mainPanel, "employeeManagement"));
@@ -205,16 +297,78 @@ public class MotorPHApp extends JFrame {
         return menuPanel;
     }
 
+    // Helper method to create enhanced menu buttons with tooltips and accessibility
+    private JButton createEnhancedMenuButton(String text, String tooltip) {
+        JButton button = new JButton(text);
+        button.setToolTipText(tooltip);
+        
+        // Add accessibility name for screen readers
+        button.getAccessibleContext().setAccessibleName(text.replaceAll("[^a-zA-Z\\s]", ""));
+        button.getAccessibleContext().setAccessibleDescription(tooltip);
+        
+        enhanceMenuButton(button);
+        return button;
+    }
+    
+    // Enhanced menu button styling
+    private void enhanceMenuButton(JButton button) {
+        button.setBackground(new Color(255, 255, 255, 0));
+        button.setForeground(Color.WHITE);
+        button.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
+        button.setOpaque(false);
+        button.setAlignmentX(Component.CENTER_ALIGNMENT);
+        button.setMaximumSize(new Dimension(220, 45));
+        button.setPreferredSize(new Dimension(220, 45));
+        button.setHorizontalAlignment(SwingConstants.LEFT);
+        button.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(255, 255, 255, 0), 1, true),
+            BorderFactory.createEmptyBorder(10, 15, 10, 15)
+        ));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        // Enhanced hover effects
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(new Color(255, 255, 255, 30));
+                button.setOpaque(true);
+                button.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(255, 255, 255, 100), 1, true),
+                    BorderFactory.createEmptyBorder(10, 15, 10, 15)
+                ));
+            }
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(new Color(255, 255, 255, 0));
+                button.setOpaque(false);
+                button.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(255, 255, 255, 0), 1, true),
+                    BorderFactory.createEmptyBorder(10, 15, 10, 15)
+                ));
+            }
+        });
+    }
+    
+    // Helper method to add menu buttons with consistent spacing
+    private void addMenuButton(JPanel menuPanel, JButton button) {
+        menuPanel.add(button);
+        menuPanel.add(Box.createRigidArea(new Dimension(0, 8)));
+    }
+    
     private void updateThemeToggleButton() {
         if (themeToggleButton != null) {
             themeToggleButton.setText(ThemeManager.isDarkMode() ? "☀️ Light Mode" : "🌙 Dark Mode");
         }
     }
 
-    // Add this method to update all button styles when theme changes
     private void updateAllButtonStyles() {
         // Update all buttons in the application
         updateButtonStylesRecursively(this);
+        // Force repaint to ensure changes are visible
+        repaint();
     }
 
     private void updateButtonStylesRecursively(Container container) {
@@ -222,7 +376,8 @@ public class MotorPHApp extends JFrame {
             if (component instanceof JButton) {
                 JButton button = (JButton) component;
                 if (!button.equals(themeToggleButton)) { // Don't update the theme toggle button
-                    forceButtonStyle(button);
+                    // Reapply button styling to match current theme
+                    styleButton(button);
                 }
             }
             if (component instanceof Container) {
@@ -233,7 +388,7 @@ public class MotorPHApp extends JFrame {
 
     private void createEmployeeManagementPanel() {
         employeeManagementPanel = new JPanel(new BorderLayout());
-        employeeManagementPanel.setBackground(Color.WHITE);
+        employeeManagementPanel.setBackground(ThemeManager.getBackgroundColor());
         
         // Header with blue background
         JPanel headerPanel = new JPanel(new BorderLayout());
@@ -246,12 +401,12 @@ public class MotorPHApp extends JFrame {
         
         // Main content with split layout
         JPanel mainContentPanel = new JPanel(new BorderLayout());
-        mainContentPanel.setBackground(Color.WHITE);
+        mainContentPanel.setBackground(ThemeManager.getBackgroundColor());
         mainContentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         
         // LEFT SIDE: Employee table
         JPanel tablePanel = new JPanel(new BorderLayout());
-        tablePanel.setBackground(Color.WHITE);
+        tablePanel.setBackground(ThemeManager.getBackgroundColor());
         
         // Employee table
         String[] columnNames = {"Employee #", "Last Name", "First Name", "SSS Number", "PhilHealth #", "TIN", "Pag-IBIG #"};
@@ -279,7 +434,7 @@ public class MotorPHApp extends JFrame {
         
         // Search panel for table
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        searchPanel.setBackground(Color.WHITE);
+        searchPanel.setBackground(ThemeManager.getBackgroundColor());
         searchPanel.setBorder(BorderFactory.createTitledBorder("Search"));
         
         JTextField searchField = new JTextField(20);
@@ -310,7 +465,7 @@ public class MotorPHApp extends JFrame {
         
         // Bottom button panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.setBackground(ThemeManager.getBackgroundColor());
         
         JButton viewEmployeeButton = new JButton("View Details");
         JButton newEmployeeButton = new JButton("New Employee");
@@ -380,13 +535,13 @@ public class MotorPHApp extends JFrame {
 
     private JPanel createEmployeeDetailsPanel() {
         detailsPanel = new JPanel(new BorderLayout());
-        detailsPanel.setBackground(Color.WHITE);
+        detailsPanel.setBackground(ThemeManager.getBackgroundColor());
         detailsPanel.setBorder(BorderFactory.createTitledBorder("Employee Details"));
         detailsPanel.setPreferredSize(new Dimension(350, 400));
         
         // Form panel
         JPanel formPanel = new JPanel(new GridLayout(16, 2, 5, 8));
-        formPanel.setBackground(Color.WHITE);
+        formPanel.setBackground(ThemeManager.getBackgroundColor());
         formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
         // Initialize form fields
@@ -464,7 +619,7 @@ public class MotorPHApp extends JFrame {
         
         // Button panel for form
         JPanel formButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
-        formButtonPanel.setBackground(Color.WHITE);
+        formButtonPanel.setBackground(ThemeManager.getBackgroundColor());
         
         updateButton = new JButton("Update");
         deleteButton = new JButton("Delete");
@@ -745,6 +900,9 @@ public class MotorPHApp extends JFrame {
         detailFrame.setLocationRelativeTo(this);
         detailFrame.setLayout(new BorderLayout());
         
+        // Apply theme to the frame
+        detailFrame.getContentPane().setBackground(ThemeManager.getBackgroundColor());
+        
         // Header
         JPanel headerPanel = new JPanel();
         styleHeaderPanel(headerPanel);
@@ -755,46 +913,55 @@ public class MotorPHApp extends JFrame {
         
         // Main content panel
         JPanel contentPanel = new JPanel(new BorderLayout());
-        contentPanel.setBackground(Color.WHITE);
+        contentPanel.setBackground(ThemeManager.getBackgroundColor());
         contentPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         
         // Employee details panel
         JPanel detailsPanel = new JPanel(new GridLayout(7, 4, 10, 10));
         detailsPanel.setBorder(BorderFactory.createTitledBorder("Employee Information"));
-        detailsPanel.setBackground(Color.WHITE);
+        detailsPanel.setBackground(ThemeManager.getBackgroundColor());
         
-        detailsPanel.add(new JLabel("Employee ID:"));
-        detailsPanel.add(new JLabel(String.valueOf(employee.getEmployeeID())));
-        detailsPanel.add(new JLabel("Department:"));
-        detailsPanel.add(new JLabel(employee.getDepartment()));
+        // Create and style all labels with theme colors
+        JLabel[] fieldLabels = {
+            new JLabel("Employee ID:"), new JLabel("Department:"),
+            new JLabel("Last Name:"), new JLabel("First Name:"),
+            new JLabel("Email:"), new JLabel("Phone:"),
+            new JLabel("Position:"), new JLabel("Birthday:"),
+            new JLabel("SSS Number:"), new JLabel("PhilHealth:"),
+            new JLabel("TIN:"), new JLabel("Pag-IBIG:"),
+            new JLabel("Basic Salary:"), new JLabel("")
+        };
         
-        detailsPanel.add(new JLabel("Last Name:"));
-        detailsPanel.add(new JLabel(employee.getLastName()));
-        detailsPanel.add(new JLabel("First Name:"));
-        detailsPanel.add(new JLabel(employee.getFirstName()));
+        JLabel[] valueLabels = {
+            new JLabel(String.valueOf(employee.getEmployeeID())),
+            new JLabel(employee.getDepartment()),
+            new JLabel(employee.getLastName()),
+            new JLabel(employee.getFirstName()),
+            new JLabel(employee.getEmail()),
+            new JLabel(employee.getPhoneNumber()),
+            new JLabel(employee.getPosition()),
+            new JLabel(employee.getBirthday()),
+            new JLabel(employee.getSssNumber()),
+            new JLabel(employee.getPhilHealthNumber()),
+            new JLabel(employee.getTinNumber()),
+            new JLabel(employee.getPagIbigNumber()),
+            new JLabel("$" + String.format("%.2f", employee.getBasicSalary())),
+            new JLabel("")
+        };
         
-        detailsPanel.add(new JLabel("Email:"));
-        detailsPanel.add(new JLabel(employee.getEmail()));
-        detailsPanel.add(new JLabel("Phone:"));
-        detailsPanel.add(new JLabel(employee.getPhoneNumber()));
+        // Apply theme to all labels
+        for (JLabel label : fieldLabels) {
+            label.setForeground(ThemeManager.getForegroundColor());
+        }
+        for (JLabel label : valueLabels) {
+            label.setForeground(ThemeManager.getForegroundColor());
+        }
         
-        detailsPanel.add(new JLabel("Position:"));
-        detailsPanel.add(new JLabel(employee.getPosition()));
-        detailsPanel.add(new JLabel("Birthday:"));
-        detailsPanel.add(new JLabel(employee.getBirthday()));
-        
-        detailsPanel.add(new JLabel("SSS Number:"));
-        detailsPanel.add(new JLabel(employee.getSssNumber()));
-        detailsPanel.add(new JLabel("PhilHealth:"));
-        detailsPanel.add(new JLabel(employee.getPhilHealthNumber()));
-        
-        detailsPanel.add(new JLabel("TIN:"));
-        detailsPanel.add(new JLabel(employee.getTinNumber()));
-        detailsPanel.add(new JLabel("Pag-IBIG:"));
-        detailsPanel.add(new JLabel(employee.getPagIbigNumber()));
-        
-        detailsPanel.add(new JLabel("Basic Salary:"));
-        detailsPanel.add(new JLabel("$" + String.format("%.2f", employee.getBasicSalary())));
+        // Add labels to panel in pairs
+        for (int i = 0; i < fieldLabels.length; i++) {
+            detailsPanel.add(fieldLabels[i]);
+            detailsPanel.add(valueLabels[i]);
+        }
         detailsPanel.add(new JLabel(""));
         detailsPanel.add(new JLabel(""));
         
@@ -806,6 +973,10 @@ public class MotorPHApp extends JFrame {
         
         detailFrame.add(headerPanel, BorderLayout.NORTH);
         detailFrame.add(contentPanel, BorderLayout.CENTER);
+        
+        // Apply theme to the entire frame
+        ThemeManager.applyTheme(detailFrame);
+        
         detailFrame.setVisible(true);
     }
 
@@ -813,16 +984,20 @@ public class MotorPHApp extends JFrame {
     private JPanel createSalaryComputationPanel(Employee employee) {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createTitledBorder("Salary Computation"));
-        panel.setBackground(Color.WHITE);
+        panel.setBackground(ThemeManager.getBackgroundColor());
         
         // Month selection
         JPanel monthPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        monthPanel.setBackground(Color.WHITE);
+        monthPanel.setBackground(ThemeManager.getBackgroundColor());
         
-        monthPanel.add(new JLabel("Select Month:"));
+        JLabel monthLabel = new JLabel("Select Month:");
+        monthLabel.setForeground(ThemeManager.getForegroundColor());
+        monthPanel.add(monthLabel);
         String[] months = {"January", "February", "March", "April", "May", "June",
                         "July", "August", "September", "October", "November", "December"};
         JComboBox<String> monthCombo = new JComboBox<>(months);
+        monthCombo.setBackground(ThemeManager.getBackgroundColor());
+        monthCombo.setForeground(ThemeManager.getForegroundColor());
         monthPanel.add(monthCombo);
         
         JButton computeButton = new JButton("Compute Salary");
@@ -831,10 +1006,10 @@ public class MotorPHApp extends JFrame {
         
         // Results panel
         JPanel resultsPanel = new JPanel(new GridLayout(8, 2, 10, 10));
-        resultsPanel.setBackground(Color.WHITE);
+        resultsPanel.setBackground(ThemeManager.getBackgroundColor());
         resultsPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         
-        // Result labels
+        // Result labels with proper theming
         JLabel baseSalaryLabel = new JLabel("$0.00");
         JLabel allowanceLabel = new JLabel("$0.00");
         JLabel overtimeLabel = new JLabel("$0.00");
@@ -844,22 +1019,29 @@ public class MotorPHApp extends JFrame {
         JLabel philHealthLabel = new JLabel("$0.00");
         JLabel netLabel = new JLabel("$0.00");
         
-        resultsPanel.add(new JLabel("Base Salary:"));
-        resultsPanel.add(baseSalaryLabel);
-        resultsPanel.add(new JLabel("Allowance:"));
-        resultsPanel.add(allowanceLabel);
-        resultsPanel.add(new JLabel("Overtime Pay:"));
-        resultsPanel.add(overtimeLabel);
-        resultsPanel.add(new JLabel("Gross Salary:"));
-        resultsPanel.add(grossLabel);
-        resultsPanel.add(new JLabel("Income Tax (15%):"));
-        resultsPanel.add(taxLabel);
-        resultsPanel.add(new JLabel("SSS (2%):"));
-        resultsPanel.add(sssLabel);
-        resultsPanel.add(new JLabel("PhilHealth (3%):"));
-        resultsPanel.add(philHealthLabel);
-        resultsPanel.add(new JLabel("Net Salary:"));
-        resultsPanel.add(netLabel);
+        // Style result labels
+        JLabel[] resultLabels = {baseSalaryLabel, allowanceLabel, overtimeLabel, grossLabel,
+                               taxLabel, sssLabel, philHealthLabel, netLabel};
+        for (JLabel label : resultLabels) {
+            label.setForeground(ThemeManager.getForegroundColor());
+        }
+        
+        // Create and style field labels
+        JLabel[] fieldLabels = {
+            new JLabel("Base Salary:"), new JLabel("Allowance:"), new JLabel("Overtime Pay:"),
+            new JLabel("Gross Salary:"), new JLabel("Income Tax (15%):"), new JLabel("SSS (2%):"),
+            new JLabel("PhilHealth (3%):"), new JLabel("Net Salary:")
+        };
+        
+        for (JLabel label : fieldLabels) {
+            label.setForeground(ThemeManager.getForegroundColor());
+        }
+        
+        // Add labels to results panel
+        for (int i = 0; i < fieldLabels.length; i++) {
+            resultsPanel.add(fieldLabels[i]);
+            resultsPanel.add(resultLabels[i]);
+        }
         
         // Compute button action
         computeButton.addActionListener(e -> {
@@ -905,6 +1087,9 @@ public class MotorPHApp extends JFrame {
         newEmpFrame.setLocationRelativeTo(this);
         newEmpFrame.setLayout(new BorderLayout());
         
+        // Apply theme to the frame
+        newEmpFrame.getContentPane().setBackground(ThemeManager.getBackgroundColor());
+        
         // Header
         JPanel headerPanel = new JPanel();
         styleHeaderPanel(headerPanel);
@@ -916,7 +1101,7 @@ public class MotorPHApp extends JFrame {
         // Form panel
         JPanel formPanel = new JPanel(new GridLayout(16, 2, 10, 10));
         formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        formPanel.setBackground(Color.WHITE);
+        formPanel.setBackground(ThemeManager.getBackgroundColor());
         
         // Form fields - Updated to match CSV structure
         JTextField empIdField = new JTextField();
@@ -954,38 +1139,59 @@ public class MotorPHApp extends JFrame {
         styleTextField(salaryField);
         styleTextField(emailField);
         
+        // Style combo boxes
+        statusCombo.setBackground(ThemeManager.getBackgroundColor());
+        statusCombo.setForeground(ThemeManager.getForegroundColor());
+        deptCombo.setBackground(ThemeManager.getBackgroundColor());
+        deptCombo.setForeground(ThemeManager.getForegroundColor());
+        
+        // Create and style labels
+        JLabel[] labels = {
+            new JLabel("Employee ID:"), new JLabel("Last Name:"), new JLabel("First Name:"),
+            new JLabel("Birthday (MM/DD/YYYY):"), new JLabel("Address:"), new JLabel("Phone:"),
+            new JLabel("SSS Number:"), new JLabel("PhilHealth Number:"), new JLabel("TIN:"),
+            new JLabel("Pag-IBIG Number:"), new JLabel("Status:"), new JLabel("Position:"),
+            new JLabel("Supervisor:"), new JLabel("Basic Salary:"), new JLabel("Email (Auto-filled):"),
+            new JLabel("Department (Auto-filled):")
+        };
+        
+        // Apply theme to all labels
+        for (JLabel label : labels) {
+            label.setForeground(ThemeManager.getForegroundColor());
+        }
+        
         // Add fields to form
-        formPanel.add(new JLabel("Employee ID:"));
+        formPanel.add(labels[0]); // Employee ID:
         formPanel.add(empIdField);
-        formPanel.add(new JLabel("Last Name:"));
+        formPanel.add(labels[1]); // Last Name:
         formPanel.add(lastNameField);
-        formPanel.add(new JLabel("First Name:"));
+        formPanel.add(labels[2]); // First Name:
         formPanel.add(firstNameField);
-        formPanel.add(new JLabel("Birthday (MM/DD/YYYY):"));
+        formPanel.add(labels[3]); // Birthday (MM/DD/YYYY):
         formPanel.add(birthdayField);
-        formPanel.add(new JLabel("Address:"));
+        formPanel.add(labels[4]); // Address:
         formPanel.add(addressField);
-        formPanel.add(new JLabel("Phone:"));
+        formPanel.add(labels[5]); // Phone:
         formPanel.add(phoneField);
-        formPanel.add(new JLabel("SSS Number:"));
+        formPanel.add(labels[6]); // SSS Number:
         formPanel.add(sssField);
-        formPanel.add(new JLabel("PhilHealth Number:"));
+        formPanel.add(labels[7]); // PhilHealth Number:
         formPanel.add(philHealthField);
-        formPanel.add(new JLabel("TIN:"));
+        formPanel.add(labels[8]); // TIN:
         formPanel.add(tinField);
-        formPanel.add(new JLabel("Pag-IBIG Number:"));
+        formPanel.add(labels[9]); // Pag-IBIG Number:
         formPanel.add(pagIbigField);
-        formPanel.add(new JLabel("Status:"));
+        formPanel.add(labels[10]); // Status:
         formPanel.add(statusCombo);
-        formPanel.add(new JLabel("Position:"));
+        formPanel.add(labels[11]); // Position:
         formPanel.add(positionField);
-        formPanel.add(new JLabel("Supervisor:"));
+        formPanel.add(labels[12]); // Supervisor:
         formPanel.add(supervisorField);
-        formPanel.add(new JLabel("Basic Salary:"));
+        formPanel.add(labels[13]); // Basic Salary:
         formPanel.add(salaryField);
-        formPanel.add(new JLabel("Email (Auto-filled):"));
+        formPanel.add(labels[14]); // Email (Auto-filled):
         formPanel.add(emailField);
-        formPanel.add(new JLabel("Department (Auto-filled):"));
+        formPanel.add(labels[15]); // Department (Auto-filled):
         formPanel.add(deptCombo);
         
         // Auto-fill email when names change
@@ -1011,7 +1217,7 @@ public class MotorPHApp extends JFrame {
         
         // Button panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.setBackground(ThemeManager.getBackgroundColor());
         
         JButton saveButton = new JButton("Save Employee");
         JButton cancelButton = new JButton("Cancel");
@@ -1064,6 +1270,8 @@ public class MotorPHApp extends JFrame {
                         "Success",
                         JOptionPane.INFORMATION_MESSAGE);
                     
+                    updateStatus("Employee " + newEmployee.getName() + " added successfully!");
+                    
                     newEmpFrame.dispose();
                     
                     // Refresh the main table if it exists
@@ -1093,6 +1301,10 @@ public class MotorPHApp extends JFrame {
         newEmpFrame.add(headerPanel, BorderLayout.NORTH);
         newEmpFrame.add(formPanel, BorderLayout.CENTER);
         newEmpFrame.add(buttonPanel, BorderLayout.SOUTH);
+        
+        // Apply theme to the entire frame
+        ThemeManager.applyTheme(newEmpFrame);
+        
         newEmpFrame.setVisible(true);
     }
 
@@ -1145,7 +1357,7 @@ public class MotorPHApp extends JFrame {
 
     private void createEmployeeListPanel() {
         employeeListPanel = new JPanel(new BorderLayout());
-        employeeListPanel.setBackground(Color.WHITE);
+        employeeListPanel.setBackground(ThemeManager.getBackgroundColor());
         
         // Header with blue background
         JPanel headerPanel = new JPanel(new BorderLayout());
@@ -1185,7 +1397,7 @@ public class MotorPHApp extends JFrame {
         
         // Button panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.setBackground(ThemeManager.getBackgroundColor());
         
         JButton addNewButton = new JButton("Add New Employee");
         forceButtonStyle(addNewButton);
@@ -1268,80 +1480,67 @@ public class MotorPHApp extends JFrame {
     }
     
     private void createLoginPanel() {
-        loginPanel = new JPanel();
-        loginPanel.setLayout(new BorderLayout());
-        loginPanel.setBackground(Color.WHITE);
+        loginPanel = new JPanel(new GridBagLayout());
+        loginPanel.setBackground(ThemeManager.getBackgroundColor());
         
-        // Blue header
-        JPanel headerPanel = new JPanel();
-        styleHeaderPanel(headerPanel);
-        headerPanel.setLayout(new BorderLayout());
-        
-        JLabel titleLabel = new JLabel("MotorPH Employee Login", JLabel.CENTER);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        titleLabel.setForeground(Color.WHITE);
-        headerPanel.add(titleLabel, BorderLayout.CENTER);
-        
-        JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setBackground(Color.WHITE);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);
         
+        // Simple title
+        JLabel titleLabel = new JLabel("MotorPH Login", JLabel.CENTER);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        titleLabel.setForeground(ThemeManager.getForegroundColor());
+        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
+        loginPanel.add(titleLabel, gbc);
+        
         // Email field
+        gbc.gridwidth = 1;
+        gbc.gridy = 1;
+        gbc.gridx = 0;
+        gbc.anchor = GridBagConstraints.EAST;
         JLabel emailLabel = new JLabel("Email:");
-        JTextField emailField = new JTextField(20);
-        emailField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(0, 102, 204)),
-            BorderFactory.createEmptyBorder(5, 5, 5, 5)));
+        emailLabel.setForeground(ThemeManager.getForegroundColor());
+        loginPanel.add(emailLabel, gbc);
+        
+        gbc.gridx = 1;
+        gbc.anchor = GridBagConstraints.WEST;
+        JTextField emailField = new JTextField(15);
+        emailField.setBackground(ThemeManager.getBackgroundColor());
+        emailField.setForeground(ThemeManager.getForegroundColor());
+        loginPanel.add(emailField, gbc);
         
         // Password field
+        gbc.gridy = 2;
+        gbc.gridx = 0;
+        gbc.anchor = GridBagConstraints.EAST;
         JLabel passwordLabel = new JLabel("Password:");
-        JPasswordField passwordField = new JPasswordField(20);
-        passwordField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(0, 102, 204)),
-            BorderFactory.createEmptyBorder(5, 5, 5, 5)));
+        passwordLabel.setForeground(ThemeManager.getForegroundColor());
+        loginPanel.add(passwordLabel, gbc);
+        
+        gbc.gridx = 1;
+        gbc.anchor = GridBagConstraints.WEST;
+        JPasswordField passwordField = new JPasswordField(15);
+        passwordField.setBackground(ThemeManager.getBackgroundColor());
+        passwordField.setForeground(ThemeManager.getForegroundColor());
+        loginPanel.add(passwordField, gbc);
         
         // Login button
-        JButton loginButton = new JButton("Login");
-        forceButtonStyle(loginButton);
-        loginButton.setPreferredSize(new Dimension(100, 40));
-        
-        // Add components to form
+        gbc.gridy = 3;
         gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.anchor = GridBagConstraints.EAST;
-        formPanel.add(emailLabel, gbc);
-        
-        gbc.gridx = 1;
-        gbc.anchor = GridBagConstraints.WEST;
-        formPanel.add(emailField, gbc);
-        
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.anchor = GridBagConstraints.EAST;
-        formPanel.add(passwordLabel, gbc);
-        
-        gbc.gridx = 1;
-        gbc.anchor = GridBagConstraints.WEST;
-        formPanel.add(passwordField, gbc);
-        
-        gbc.gridx = 0;
-        gbc.gridy = 2;
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
-        gbc.insets = new Insets(20, 10, 10, 10);
-        formPanel.add(loginButton, gbc);
+        JButton loginButton = new JButton("Login");
+        forceButtonStyle(loginButton);
+        loginPanel.add(loginButton, gbc);
         
-        // Add company logo or image
-        JPanel logoPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        logoPanel.setBackground(Color.WHITE);
-        JLabel logoLabel = new JLabel("MotorPH");
-        logoLabel.setFont(new Font("Arial", Font.BOLD, 36));
-        logoLabel.setForeground(new Color(0, 102, 204));
-        logoLabel.setHorizontalAlignment(JLabel.CENTER);
-        logoPanel.add(logoLabel);
+        // Demo info
+        // gbc.gridy = 4;
+        // // JLabel demoLabel = new JLabel("Demo: Email=123, Password=123", JLabel.CENTER);
+        // demoLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        // demoLabel.setForeground(ThemeManager.getForegroundColor());
+        // loginPanel.add(demoLabel, gbc);
         
-        // Login button action
+        // Login action
         loginButton.addActionListener(e -> {
             String email = emailField.getText();
             String password = new String(passwordField.getPassword());
@@ -1365,7 +1564,7 @@ public class MotorPHApp extends JFrame {
                     0.0
                 ));
                 
-                // Show Employee Management panel instead of dashboard
+                // Show Employee Management panel
                 cardLayout.show(mainPanel, "employeeManagement");
                 
                 // Make the sidebar visible after login
@@ -1381,6 +1580,9 @@ public class MotorPHApp extends JFrame {
                 // Apply current theme to all components
                 ThemeManager.applyTheme(this);
                 
+                // Update status
+                updateStatus("Login successful - Welcome " + employee.getName() + "!");
+                
                 // Refresh the employee table with the latest data
                 if (employeeManagementPanel != null) {
                     refreshEmployeeTableAfterLogin();
@@ -1393,10 +1595,6 @@ public class MotorPHApp extends JFrame {
                     JOptionPane.ERROR_MESSAGE);
             }
         });
-        
-        loginPanel.add(headerPanel, BorderLayout.NORTH);
-        loginPanel.add(formPanel, BorderLayout.CENTER);
-        loginPanel.add(logoPanel, BorderLayout.SOUTH);
     }
 
     private void refreshEmployeeTableAfterLogin() {
@@ -1448,7 +1646,7 @@ public class MotorPHApp extends JFrame {
     
     private void createDashboardPanel() {
         dashboardPanel = new JPanel(new BorderLayout());
-        dashboardPanel.setBackground(Color.WHITE);
+        dashboardPanel.setBackground(ThemeManager.getBackgroundColor());
         
         // Header panel with blue background
         JPanel headerPanel = new JPanel(new BorderLayout());
@@ -1461,7 +1659,7 @@ public class MotorPHApp extends JFrame {
         
         // Main content panel
         JPanel contentPanel = new JPanel(new GridBagLayout());
-        contentPanel.setBackground(Color.WHITE);
+        contentPanel.setBackground(ThemeManager.getBackgroundColor());
         GridBagConstraints gbc = new GridBagConstraints();
         
         JLabel welcomeLabel = new JLabel("Welcome, " + employee.getName() + "!");
@@ -1490,7 +1688,7 @@ public class MotorPHApp extends JFrame {
     
     private void createEmployeeInfoPanel() {
         employeeInfoPanel = new JPanel(new BorderLayout());
-        employeeInfoPanel.setBackground(Color.WHITE);
+        employeeInfoPanel.setBackground(ThemeManager.getBackgroundColor());
         
         // Header with blue background
         JPanel headerPanel = new JPanel(new BorderLayout());
@@ -1554,7 +1752,7 @@ public class MotorPHApp extends JFrame {
         });
         
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.setBackground(ThemeManager.getBackgroundColor());
         buttonPanel.add(updateButton);
         
         // Assemble the panel
@@ -1565,7 +1763,7 @@ public class MotorPHApp extends JFrame {
     
     private void createPayrollPanel() {
         payrollPanel = new JPanel(new BorderLayout());
-        payrollPanel.setBackground(Color.WHITE);
+        payrollPanel.setBackground(ThemeManager.getBackgroundColor());
         
         // Header with blue background
         JPanel headerPanel = new JPanel(new BorderLayout());
@@ -1593,7 +1791,7 @@ public class MotorPHApp extends JFrame {
         
         // Button panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.setBackground(ThemeManager.getBackgroundColor());
         
         JButton generatePayslipButton = new JButton("Generate Payslip");
         forceButtonStyle(generatePayslipButton);
@@ -1616,7 +1814,7 @@ public class MotorPHApp extends JFrame {
     private JPanel createBasicPayrollPanel() {
         JPanel panel = new JPanel(new GridLayout(5, 2, 10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        panel.setBackground(Color.WHITE);
+        panel.setBackground(ThemeManager.getBackgroundColor());
         
         panel.add(new JLabel("Employee ID:"));
         panel.add(new JLabel(String.valueOf(employee.getEmployeeID())));
@@ -1640,11 +1838,11 @@ public class MotorPHApp extends JFrame {
     private JPanel createSalaryCalculatorPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        panel.setBackground(Color.WHITE);
+        panel.setBackground(ThemeManager.getBackgroundColor());
         
         // Input fields
         JPanel inputPanel = new JPanel(new GridLayout(6, 2, 10, 10));
-        inputPanel.setBackground(Color.WHITE);
+        inputPanel.setBackground(ThemeManager.getBackgroundColor());
         
         inputPanel.add(new JLabel("Base Salary:"));
         JTextField baseSalaryField = new JTextField(String.valueOf(payroll.getSalary()));
@@ -1708,6 +1906,7 @@ public class MotorPHApp extends JFrame {
                 
                 double grossSalary = (hourlyRate * hoursWorked) + overtimePay + bonus;
                 
+                
                 // Simplified tax calculation (15% tax)
                 double taxRate = 0.15;
                 double netSalary = grossSalary * (1 - taxRate);
@@ -1728,7 +1927,7 @@ public class MotorPHApp extends JFrame {
         });
         
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.setBackground(ThemeManager.getBackgroundColor());
         buttonPanel.add(calculateButton);
         
         panel.add(buttonPanel, BorderLayout.SOUTH);
@@ -1739,11 +1938,11 @@ public class MotorPHApp extends JFrame {
     private JPanel createDeductionsPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        panel.setBackground(Color.WHITE);
+        panel.setBackground(ThemeManager.getBackgroundColor());
         
         // Deductions input
         JPanel deductionsPanel = new JPanel(new GridLayout(7, 2, 10, 10));
-        deductionsPanel.setBackground(Color.WHITE);
+        deductionsPanel.setBackground(ThemeManager.getBackgroundColor());
         
         deductionsPanel.add(new JLabel("Gross Salary:"));
         JTextField grossSalaryField = new JTextField(String.format("%.2f", payroll.getSalary()));
@@ -1834,7 +2033,7 @@ public class MotorPHApp extends JFrame {
         });
         
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.setBackground(ThemeManager.getBackgroundColor());
         buttonPanel.add(calculateButton);
         
         panel.add(buttonPanel, BorderLayout.SOUTH);
@@ -1844,7 +2043,7 @@ public class MotorPHApp extends JFrame {
     
     private void createLeaveRequestPanel() {
         leaveRequestPanel = new JPanel(new BorderLayout());
-        leaveRequestPanel.setBackground(Color.WHITE);
+        leaveRequestPanel.setBackground(ThemeManager.getBackgroundColor());
         
         // Header with blue background
         JPanel headerPanel = new JPanel(new BorderLayout());
@@ -1858,7 +2057,7 @@ public class MotorPHApp extends JFrame {
         // Leave request form
         JPanel formPanel = new JPanel(new GridLayout(5, 2, 10, 10));
         formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        formPanel.setBackground(Color.WHITE);
+        formPanel.setBackground(ThemeManager.getBackgroundColor());
         
         formPanel.add(new JLabel("Employee ID:"));
         formPanel.add(new JLabel(String.valueOf(employee.getEmployeeID())));
@@ -1905,7 +2104,7 @@ public class MotorPHApp extends JFrame {
         });
         
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.setBackground(ThemeManager.getBackgroundColor());
         buttonPanel.add(submitButton);
         
         // Add components to panel
@@ -1916,7 +2115,7 @@ public class MotorPHApp extends JFrame {
     
     private void createTaxFormPanel() {
         taxFormPanel = new JPanel(new BorderLayout());
-        taxFormPanel.setBackground(Color.WHITE);
+        taxFormPanel.setBackground(ThemeManager.getBackgroundColor());
         
         // Header with blue background
         JPanel headerPanel = new JPanel(new BorderLayout());
@@ -1930,7 +2129,7 @@ public class MotorPHApp extends JFrame {
         // Tax form info
         JPanel infoPanel = new JPanel(new GridLayout(5, 2, 10, 10));
         infoPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        infoPanel.setBackground(Color.WHITE);
+        infoPanel.setBackground(ThemeManager.getBackgroundColor());
         
         // Set tax form data
         taxForm.setEmployeeID(employee.getEmployeeID());
@@ -1962,7 +2161,7 @@ public class MotorPHApp extends JFrame {
         });
         
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.setBackground(ThemeManager.getBackgroundColor());
         buttonPanel.add(downloadButton);
         
         // Add components to panel
@@ -1973,7 +2172,7 @@ public class MotorPHApp extends JFrame {
     
     private void createAttendancePanel() {
         attendancePanel = new JPanel(new BorderLayout());
-        attendancePanel.setBackground(Color.WHITE);
+        attendancePanel.setBackground(ThemeManager.getBackgroundColor());
         
         // Header with blue background
         JPanel headerPanel = new JPanel(new BorderLayout());
@@ -2007,11 +2206,11 @@ public class MotorPHApp extends JFrame {
     // Tab 1: Clock In/Out Panel
     private JPanel createClockInOutPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(Color.WHITE);
+        panel.setBackground(ThemeManager.getBackgroundColor());
         
         // Current status panel
         JPanel statusPanel = new JPanel(new GridBagLayout());
-        statusPanel.setBackground(Color.WHITE);
+        statusPanel.setBackground(ThemeManager.getBackgroundColor());
         statusPanel.setBorder(BorderFactory.createTitledBorder("Current Status"));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);
@@ -2080,7 +2279,7 @@ public class MotorPHApp extends JFrame {
         
         // Buttons panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 20));
-        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.setBackground(ThemeManager.getBackgroundColor());
         
         JButton clockInButton = new JButton("CLOCK IN");
         forceButtonStyle(clockInButton);
@@ -2148,7 +2347,7 @@ public class MotorPHApp extends JFrame {
     // Tab 2: Attendance Records Panel
     private JPanel createAttendanceRecordsPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(Color.WHITE);
+        panel.setBackground(ThemeManager.getBackgroundColor());
         
         // Create table model
         String[] columnNames = {"Date", "Login Time", "Logout Time", "Hours Worked", "Status"};
@@ -2184,7 +2383,7 @@ public class MotorPHApp extends JFrame {
         
         // Filter panel
         JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        filterPanel.setBackground(Color.WHITE);
+        filterPanel.setBackground(ThemeManager.getBackgroundColor());
         filterPanel.setBorder(BorderFactory.createTitledBorder("Filter Records"));
         
         filterPanel.add(new JLabel("Show:"));
@@ -2220,12 +2419,12 @@ public class MotorPHApp extends JFrame {
     // Tab 3: Attendance Summary Panel
     private JPanel createAttendanceSummaryPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(Color.WHITE);
+        panel.setBackground(ThemeManager.getBackgroundColor());
         
         // Summary statistics
         JPanel statsPanel = new JPanel(new GridLayout(3, 2, 20, 10));
         statsPanel.setBorder(BorderFactory.createTitledBorder("Attendance Statistics"));
-        statsPanel.setBackground(Color.WHITE);
+        statsPanel.setBackground(ThemeManager.getBackgroundColor());
         
         // Calculate statistics
         int totalDays = attendanceRecords.size();
@@ -2263,7 +2462,7 @@ public class MotorPHApp extends JFrame {
         // Chart placeholder (you could add a simple bar chart here)
         JPanel chartPanel = new JPanel();
         chartPanel.setBorder(BorderFactory.createTitledBorder("Hours Chart"));
-        chartPanel.setBackground(Color.WHITE);
+        chartPanel.setBackground(ThemeManager.getBackgroundColor());
         chartPanel.add(new JLabel("Weekly hours chart would go here"));
         
         // Export button
@@ -2277,7 +2476,7 @@ public class MotorPHApp extends JFrame {
         });
         
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.setBackground(ThemeManager.getBackgroundColor());
         buttonPanel.add(exportButton);
         
         panel.add(statsPanel, BorderLayout.NORTH);
@@ -2325,6 +2524,13 @@ public class MotorPHApp extends JFrame {
         button.setFont(new Font("Arial", Font.BOLD, 12));
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
+        // Remove all existing mouse listeners to avoid duplicates
+        for (java.awt.event.MouseListener listener : button.getMouseListeners()) {
+            if (listener.getClass().getName().contains("MotorPHApp")) {
+                button.removeMouseListener(listener);
+            }
+        }
+        
         // Add hover effect with custom listener
         button.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
@@ -2354,12 +2560,25 @@ public class MotorPHApp extends JFrame {
     }
 
     private void stylePanel(JPanel panel) {
-        panel.setBackground(Color.WHITE);
+        panel.setBackground(ThemeManager.getBackgroundColor());
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
     }
 
     private void styleHeaderPanel(JPanel panel) {
         panel.setBackground(ThemeManager.getAccentColor());
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    }
+    
+    // Helper method to update status bar
+    private void updateStatus(String message) {
+        if (statusLabel != null) {
+            statusLabel.setText(message);
+            // Auto-clear status after 5 seconds for non-error messages
+            if (!message.toLowerCase().contains("error") && !message.toLowerCase().contains("failed")) {
+                javax.swing.Timer statusTimer = new javax.swing.Timer(5000, e -> statusLabel.setText("Ready - MotorPH Employee Management System"));
+                statusTimer.setRepeats(false);
+                statusTimer.start();
+            }
+        }
     }
 }

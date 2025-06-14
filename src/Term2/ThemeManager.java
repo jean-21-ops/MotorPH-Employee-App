@@ -44,11 +44,11 @@ public class ThemeManager {
     
     private static void animateThemeChange(Component rootComponent) {
         // Animation parameters
-        int animationDuration = 300; // milliseconds
-        int animationSteps = 20;
+        int animationDuration = 200; // milliseconds - shorter for smoother feel
+        int animationSteps = 15;
         int stepDelay = animationDuration / animationSteps;
         
-        // Get current and target colors
+        // Get current and target colors - Fixed the direction
         Color currentBg = isDarkMode ? LIGHT_BACKGROUND : DARK_BACKGROUND;
         Color targetBg = isDarkMode ? DARK_BACKGROUND : LIGHT_BACKGROUND;
         
@@ -60,13 +60,18 @@ public class ThemeManager {
             step[0]++;
             float progress = (float) step[0] / animationSteps;
             
-            // Apply colors to components
-            applyThemeToComponent(rootComponent, progress);
+            // Apply animated colors to components
+            applyAnimatedTheme(rootComponent, currentBg, targetBg, progress);
             
             if (step[0] >= animationSteps) {
                 animationTimer.stop();
                 // Final application to ensure all components are updated
                 applyTheme(rootComponent);
+                // Force a complete repaint
+                if (rootComponent instanceof JFrame) {
+                    ((JFrame) rootComponent).revalidate();
+                }
+                rootComponent.repaint();
             }
         });
         
@@ -83,18 +88,117 @@ public class ThemeManager {
         return new Color(r, g, b);
     }
     
-    private static void applyThemeToComponent(Component component, float progress) {
-        if (component instanceof JPanel) {
-            JPanel panel = (JPanel) component;
-            Color currentBg = isDarkMode ? LIGHT_BACKGROUND : DARK_BACKGROUND;
-            Color targetBg = isDarkMode ? DARK_BACKGROUND : LIGHT_BACKGROUND;
-            panel.setBackground(interpolateColor(currentBg, targetBg, progress));
+    private static void applyAnimatedTheme(Component component, Color currentBg, Color targetBg, float progress) {
+        Color currentFg = isDarkMode ? LIGHT_FOREGROUND : DARK_FOREGROUND;
+        Color targetFg = isDarkMode ? DARK_FOREGROUND : LIGHT_FOREGROUND;
+        Color currentPanel = isDarkMode ? LIGHT_PANEL : DARK_PANEL;
+        Color targetPanel = isDarkMode ? DARK_PANEL : LIGHT_PANEL;
+        
+        if (component instanceof JFrame) {
+            JFrame frame = (JFrame) component;
+            frame.getContentPane().setBackground(interpolateColor(currentBg, targetBg, progress));
         }
         
+        if (component instanceof JPanel) {
+            JPanel panel = (JPanel) component;
+            // Check if it's a header/accent panel
+            Color panelBg = panel.getBackground();
+            if (panelBg != null && (
+                panelBg.equals(new Color(0, 102, 204)) || 
+                panelBg.equals(new Color(0, 123, 255)) ||
+                panelBg.equals(LIGHT_ACCENT) ||
+                panelBg.equals(DARK_ACCENT))) {
+                // Keep accent color during animation
+                panel.setBackground(isDarkMode ? DARK_ACCENT : LIGHT_ACCENT);
+            } else {
+                panel.setBackground(interpolateColor(currentBg, targetBg, progress));
+            }
+        }
+        
+        if (component instanceof JLabel) {
+            JLabel label = (JLabel) component;
+            // Check if this label is on an accent-colored background
+            Container parent = label.getParent();
+            boolean isOnAccentBackground = false;
+            
+            if (parent != null) {
+                Color parentBg = parent.getBackground();
+                if (parentBg != null && (
+                    parentBg.equals(isDarkMode ? DARK_ACCENT : LIGHT_ACCENT) ||
+                    parentBg.equals(LIGHT_ACCENT) ||
+                    parentBg.equals(DARK_ACCENT) ||
+                    parentBg.equals(new Color(0, 102, 204)) ||
+                    parentBg.equals(new Color(0, 123, 255)))) {
+                    isOnAccentBackground = true;
+                }
+            }
+            
+            // Keep white text on accent backgrounds, otherwise animate color
+            if (isOnAccentBackground) {
+                label.setForeground(Color.WHITE);
+            } else {
+                label.setForeground(interpolateColor(currentFg, targetFg, progress));
+            }
+        }
+        
+        if (component instanceof JTextField) {
+            JTextField field = (JTextField) component;
+            field.setBackground(interpolateColor(currentBg, targetBg, progress));
+            field.setForeground(interpolateColor(currentFg, targetFg, progress));
+        }
+        
+        if (component instanceof JTable) {
+            JTable table = (JTable) component;
+            table.setBackground(interpolateColor(currentBg, targetBg, progress));
+            table.setForeground(interpolateColor(currentFg, targetFg, progress));
+        }
+        
+        if (component instanceof JComboBox) {
+            JComboBox<?> comboBox = (JComboBox<?>) component;
+            comboBox.setBackground(interpolateColor(currentBg, targetBg, progress));
+            comboBox.setForeground(interpolateColor(currentFg, targetFg, progress));
+        }
+        
+        // Handle other text components during animation
+        if (component instanceof JCheckBox) {
+            JCheckBox checkBox = (JCheckBox) component;
+            checkBox.setForeground(interpolateColor(currentFg, targetFg, progress));
+            checkBox.setBackground(interpolateColor(currentBg, targetBg, progress));
+        }
+        
+        if (component instanceof JRadioButton) {
+            JRadioButton radioButton = (JRadioButton) component;
+            radioButton.setForeground(interpolateColor(currentFg, targetFg, progress));
+            radioButton.setBackground(interpolateColor(currentBg, targetBg, progress));
+        }
+        
+        if (component instanceof JTextArea) {
+            JTextArea textArea = (JTextArea) component;
+            textArea.setBackground(interpolateColor(currentBg, targetBg, progress));
+            textArea.setForeground(interpolateColor(currentFg, targetFg, progress));
+        }
+        
+        if (component instanceof JPasswordField) {
+            JPasswordField passwordField = (JPasswordField) component;
+            passwordField.setBackground(interpolateColor(currentBg, targetBg, progress));
+            passwordField.setForeground(interpolateColor(currentFg, targetFg, progress));
+        }
+        
+        // Handle titled borders
+        if (component instanceof JComponent) {
+            JComponent jComponent = (JComponent) component;
+            if (jComponent.getBorder() instanceof javax.swing.border.TitledBorder) {
+                javax.swing.border.TitledBorder titledBorder = 
+                    (javax.swing.border.TitledBorder) jComponent.getBorder();
+                titledBorder.setTitleColor(getForegroundColor());
+            }
+        }
+        
+        // Recursively apply to children
         if (component instanceof Container) {
             Container container = (Container) component;
             for (Component child : container.getComponents()) {
-                applyThemeToComponent(child, progress);
+                applyAnimatedTheme(child, currentBg, targetBg, progress);
             }
         }
         
@@ -109,9 +213,13 @@ public class ThemeManager {
         
         if (component instanceof JPanel) {
             JPanel panel = (JPanel) component;
-            // Check if it's a header panel (blue background)
-            if (panel.getBackground().equals(new Color(0, 102, 204)) || 
-                panel.getBackground().equals(new Color(0, 123, 255))) {
+            Color currentBg = panel.getBackground();
+            // Check if it's a header panel (accent color panels)
+            if (currentBg != null && (
+                currentBg.equals(new Color(0, 102, 204)) || 
+                currentBg.equals(new Color(0, 123, 255)) ||
+                currentBg.equals(LIGHT_ACCENT) ||
+                currentBg.equals(DARK_ACCENT))) {
                 panel.setBackground(getAccentColor());
             } else {
                 panel.setBackground(getBackgroundColor());
@@ -120,8 +228,24 @@ public class ThemeManager {
         
         if (component instanceof JLabel) {
             JLabel label = (JLabel) component;
-            // Don't change white text on blue headers
-            if (label.getForeground().equals(Color.WHITE)) {
+            // Check if this label is on an accent-colored background (header)
+            Container parent = label.getParent();
+            boolean isOnAccentBackground = false;
+            
+            if (parent != null) {
+                Color parentBg = parent.getBackground();
+                if (parentBg != null && (
+                    parentBg.equals(getAccentColor()) ||
+                    parentBg.equals(LIGHT_ACCENT) ||
+                    parentBg.equals(DARK_ACCENT) ||
+                    parentBg.equals(new Color(0, 102, 204)) ||
+                    parentBg.equals(new Color(0, 123, 255)))) {
+                    isOnAccentBackground = true;
+                }
+            }
+            
+            // Keep white text on accent backgrounds, otherwise use theme foreground
+            if (isOnAccentBackground) {
                 label.setForeground(Color.WHITE);
             } else {
                 label.setForeground(getForegroundColor());
@@ -132,6 +256,7 @@ public class ThemeManager {
             JTextField field = (JTextField) component;
             field.setBackground(getBackgroundColor());
             field.setForeground(getForegroundColor());
+            field.setCaretColor(getForegroundColor()); // Fix cursor color
             field.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(getAccentColor()),
                 BorderFactory.createEmptyBorder(5, 5, 5, 5)));
@@ -142,20 +267,43 @@ public class ThemeManager {
             table.setBackground(getBackgroundColor());
             table.setForeground(getForegroundColor());
             table.setGridColor(getBorderColor());
-            table.getTableHeader().setBackground(getAccentColor());
-            table.getTableHeader().setForeground(Color.WHITE);
+            table.setSelectionBackground(getAccentColor());
+            table.setSelectionForeground(Color.WHITE);
+            if (table.getTableHeader() != null) {
+                table.getTableHeader().setBackground(getAccentColor());
+                table.getTableHeader().setForeground(Color.WHITE);
+            }
         }
         
         if (component instanceof JScrollPane) {
             JScrollPane scrollPane = (JScrollPane) component;
             scrollPane.getViewport().setBackground(getBackgroundColor());
             scrollPane.setBackground(getBackgroundColor());
+            // Style the scrollbars
+            scrollPane.getVerticalScrollBar().setBackground(getPanelColor());
+            scrollPane.getHorizontalScrollBar().setBackground(getPanelColor());
         }
         
         if (component instanceof JComboBox) {
             JComboBox<?> comboBox = (JComboBox<?>) component;
             comboBox.setBackground(getBackgroundColor());
             comboBox.setForeground(getForegroundColor());
+            // Make combo box popup match theme
+            if (comboBox.getUI() instanceof javax.swing.plaf.basic.BasicComboBoxUI) {
+                comboBox.setBorder(BorderFactory.createLineBorder(getAccentColor()));
+            }
+        }
+        
+        if (component instanceof JButton) {
+            JButton button = (JButton) component;
+            // Only style if it's not already styled (to avoid overriding custom styles)
+            if (button.getBackground().equals(javax.swing.UIManager.getColor("Button.background")) ||
+                button.getBackground().equals(getButtonBackgroundColor()) ||
+                button.getBackground().equals(LIGHT_BUTTON_BG) ||
+                button.getBackground().equals(DARK_BUTTON_BG)) {
+                button.setBackground(getButtonBackgroundColor());
+                button.setForeground(getButtonForegroundColor());
+            }
         }
         
         // Recursively apply to child components
@@ -167,6 +315,56 @@ public class ThemeManager {
         }
         
         component.repaint();
+    }
+    
+    /**
+     * Apply theme to a newly created component
+     * Use this when creating new UI components to ensure they match the current theme
+     */
+    public static void applyThemeToNewComponent(Component component) {
+        applyTheme(component);
+    }
+    
+    /**
+     * Force refresh of all components in a container
+     * Use this after theme changes to ensure all components are updated
+     */
+    public static void refreshContainer(Container container) {
+        applyTheme(container);
+        container.revalidate();
+        container.repaint();
+        
+        // Recursively refresh child containers
+        for (Component child : container.getComponents()) {
+            if (child instanceof Container) {
+                refreshContainer((Container) child);
+            }
+        }
+    }
+    
+    /**
+     * Set application to light mode
+     */
+    public static void setLightMode() {
+        if (isDarkMode) {
+            isDarkMode = false;
+        }
+    }
+    
+    /**
+     * Set application to dark mode  
+     */
+    public static void setDarkMode() {
+        if (!isDarkMode) {
+            isDarkMode = true;
+        }
+    }
+    
+    /**
+     * Get text color that contrasts well with current background
+     */
+    public static Color getContrastTextColor() {
+        return isDarkMode ? DARK_FOREGROUND : LIGHT_FOREGROUND;
     }
     
     public static Color getBackgroundColor() {
@@ -195,5 +393,55 @@ public class ThemeManager {
     
     public static Color getButtonForegroundColor() {
         return isDarkMode ? DARK_BUTTON_FG : LIGHT_BUTTON_FG;
+    }
+    
+    /**
+     * Force update of all text colors in a component tree
+     * Use this specifically when text colors aren't updating properly
+     */
+    public static void forceTextColorUpdate(Component component) {
+        if (component instanceof JLabel) {
+            JLabel label = (JLabel) component;
+            // Check if parent has accent background
+            Container parent = label.getParent();
+            boolean isOnAccentBackground = false;
+            
+            if (parent != null) {
+                Color parentBg = parent.getBackground();
+                if (parentBg != null && (
+                    parentBg.equals(getAccentColor()) ||
+                    parentBg.equals(LIGHT_ACCENT) ||
+                    parentBg.equals(DARK_ACCENT))) {
+                    isOnAccentBackground = true;
+                }
+            }
+            
+            // Force color update
+            label.setForeground(isOnAccentBackground ? Color.WHITE : getForegroundColor());
+        }
+        
+        // Force update for all text components
+        if (component instanceof JTextField) {
+            ((JTextField) component).setForeground(getForegroundColor());
+        }
+        if (component instanceof JTextArea) {
+            ((JTextArea) component).setForeground(getForegroundColor());
+        }
+        if (component instanceof JCheckBox) {
+            ((JCheckBox) component).setForeground(getForegroundColor());
+        }
+        if (component instanceof JRadioButton) {
+            ((JRadioButton) component).setForeground(getForegroundColor());
+        }
+        
+        // Recursively update children
+        if (component instanceof Container) {
+            Container container = (Container) component;
+            for (Component child : container.getComponents()) {
+                forceTextColorUpdate(child);
+            }
+        }
+        
+        component.repaint();
     }
 }
