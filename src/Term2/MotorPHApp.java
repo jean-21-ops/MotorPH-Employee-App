@@ -58,8 +58,8 @@ public class MotorPHApp extends JFrame {
         createSampleAttendanceData();
         
         // Setup demo account
-        login.setEmail("123");
-        login.setPassword("123");
+        login.setEmail("admin@motorph.com");
+        login.setPassword("MotorPH2025");
         
         // Configure main frame
         setTitle("MotorPH Employee App");
