@@ -36,8 +36,8 @@ java -cp . Term2.Main
 2. Run the `Main.java` file located in `src/Term2/Main.java`
 
 ## Login Credentials
-- **Username**: 123
-- **Password**: 123
+- **Username**: admin@motorph.com
+- **Password**: MotorPH2024
 
 ## Data Storage
 Employee data is automatically saved to `employees.csv` and persists between application sessions.
